@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+{% block header %}Gerenciar Clientes{% endblock %}
+{% block content %}
+<div class="bg-white shadow-md rounded-lg overflow-hidden">
+    <div class="p-4 sm:p-6 border-b border-gray-200">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex-auto">
+                <h2 class="text-lg font-semibold text-gray-800">Lista de Clientes</h2>
+                <p class="mt-1 text-sm text-gray-600">Lista de todos os clientes cadastrados no sistema.</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex-shrink-0">
+                <a href="{{ url_for('new_client') }}" class="w-full justify-center inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">
+                    <i class="fas fa-plus mr-2"></i>Novo Cliente
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela para Desktop (Oculta em telas pequenas) -->
+    <div class="hidden md:block">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Endereço</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contato</th>
+                        <th scope="col" class="relative px-6 py-3"><span class="sr-only">Ações</span></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for client in clients %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-indigo-100 rounded-full">
+                                    <span class="text-sm font-semibold text-indigo-600">{{ client.name[0] if client.name }}</span>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ client.name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ client.address or 'N/A' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div>{{ client.contact_person or 'N/A' }}</div>
+                            <!-- Telefone com link para WhatsApp -->
+                            <div class="text-gray-400">
+                                {% if client.phone %}
+                                    {% set cleaned_phone = client.phone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '') %}
+                                    <a href="https://wa.me/55{{ cleaned_phone }}" target="_blank" class="text-green-600 hover:text-green-800 hover:underline transition-colors duration-200">
+                                        <i class="fab fa-whatsapp mr-1"></i>{{ client.phone }}
+                                    </a>
+                                {% else %}
+                                    {{ '' }}
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
+                            <a href="{{ url_for('edit_client', client_id=client.id) }}" class="text-indigo-600 hover:text-indigo-900" title="Editar">
+                                <i class="fas fa-pencil-alt"></i>
+                            </a>
+                            <form action="{{ url_for('delete_client', client_id=client.id) }}" method="POST" class="inline" 
+                                  onsubmit="openConfirmationModal(event, 'Deletar Cliente', 'Tem certeza que deseja deletar o cliente \'{{ client.name }}\'?')">
+                                <button type="submit" class="text-red-600 hover:text-red-900" title="Deletar">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-10 text-sm text-gray-500">
+                            <i class="fas fa-users text-4xl text-gray-300"></i>
+                            <h3 class="mt-2 text-sm font-semibold text-gray-900">Nenhum cliente cadastrado</h3>
+                            <p class="mt-1 text-sm text-gray-500">Comece adicionando um novo cliente.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Lista de Cards para Mobile (Oculta em telas grandes) -->
+    <div class="md:hidden p-4 space-y-4 bg-gray-50">
+        {% for client in clients %}
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-start">
+                <h3 class="font-bold text-gray-900">{{ client.name }}</h3>
+            </div>
+            <div class="mt-3 border-t border-gray-200 pt-3 text-sm text-gray-600 space-y-2">
+                <p class="flex items-start"><i class="fas fa-map-marker-alt fa-fw mr-2 mt-1 text-gray-400"></i> <span>{{ client.address or 'Endereço não informado' }}</span></p>
+                <p class="flex items-center"><i class="fas fa-user fa-fw mr-2 text-gray-400"></i> {{ client.contact_person or 'Contato não informado' }}</p>
+                <!-- Telefone com link para WhatsApp -->
+                <p class="flex items-center">
+                    <i class="fas fa-phone fa-fw mr-2 text-gray-400"></i> 
+                    {% if client.phone %}
+                        {% set cleaned_phone = client.phone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '') %}
+                        <a href="https://wa.me/55{{ cleaned_phone }}" target="_blank" class="text-green-600 hover:text-green-800 hover:underline">
+                            {{ client.phone }}
+                        </a>
+                    {% else %}
+                        <span>Telefone não informado</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="mt-4 border-t border-gray-200 pt-3 flex justify-end items-center gap-4">
+                <a href="{{ url_for('edit_client', client_id=client.id) }}" class="font-medium text-indigo-600 hover:text-indigo-900">Editar</a>
+                <form action="{{ url_for('delete_client', client_id=client.id) }}" method="POST" 
+                      onsubmit="openConfirmationModal(event, 'Deletar Cliente', 'Tem certeza que deseja deletar o cliente \'{{ client.name }}\'?')">
+                    <button type="submit" class="font-medium text-red-600 hover:text-red-900">Deletar</button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-users text-4xl text-gray-300"></i>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">Nenhum cliente cadastrado</h3>
+            <p class="mt-1 text-sm text-gray-500">Comece adicionando um novo cliente.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

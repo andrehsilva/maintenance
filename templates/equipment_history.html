@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Histórico de {{ equipment.code }}{% endblock %}
+{% block header %}Histórico do Equipamento{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+    <div class="border-b border-gray-200 pb-5 mb-5">
+        <h3 class="text-lg font-bold leading-6 text-gray-900">{{ equipment.code }} - {{ equipment.model }}</h3>
+        <p class="mt-1 text-sm text-gray-600">
+            <span class="font-medium">Cliente:</span> {{ equipment.client.name }} | 
+            <span class="font-medium">Local:</span> {{ equipment.location }}
+        </p>
+        <p class="mt-1 text-sm text-gray-500">
+            <span class="font-medium">Próxima Manutenção:</span> {{ equipment.next_maintenance_date.strftime('%d/%m/%Y') }}
+        </p>
+    </div>
+
+    <div class="flow-root">
+        <ul role="list" class="-mb-8">
+            {% for record in history_records %}
+            <li>
+                <div class="relative pb-8">
+                    {% if not loop.last %}
+                    <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                    {% endif %}
+                    <div class="relative flex space-x-3 items-start">
+                        <div>
+                            <span class="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-white">
+                                <i class="fas fa-wrench text-white text-sm"></i>
+                            </span>
+                        </div>
+                        <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                            <div>
+                                <p class="text-sm text-gray-500">
+                                    Manutenção <strong class="font-medium text-gray-900">{{ record.category }}</strong>
+                                    <span class="whitespace-nowrap">{{ record.maintenance_date.strftime('%d/%m/%Y') }}</span>
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    Técnico: <strong class="font-medium">{{ record.technician.username }}</strong>
+                                </p>
+                                <div class="mt-2 text-sm text-gray-700">
+                                    <p>{{ record.description }}</p>
+                                </div>
+                            </div>
+                            {% if current_user.role == 'admin' or current_user.id == record.technician_id %}
+                            <div class="flex-shrink-0 whitespace-nowrap text-right text-sm">
+                                <a href="{{ url_for('edit_maintenance', history_id=record.id) }}" class="font-medium text-indigo-600 hover:text-indigo-800">Editar</a>
+                                <form action="{{ url_for('delete_maintenance', history_id=record.id) }}" method="POST" class="inline pl-3" 
+                                      onsubmit="openConfirmationModal(event, 'Deletar Registro', 'Tem certeza que deseja deletar este registro de manutenção?')">
+                                    <button type="submit" class="font-medium text-red-600 hover:text-red-800">Deletar</button>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </li>
+            {% else %}
+            <li>
+                <div class="text-center py-5">
+                    <p class="text-sm text-gray-500">Nenhum registro de manutenção para este equipamento.</p>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="mt-8 flex justify-end gap-x-4">
+        <a href="{{ url_for('dashboard') }}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Voltar</a>
+        <a href="{{ url_for('new_maintenance_history', equipment_id=equipment.id) }}" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">Adicionar Novo Registro</a>
+    </div>
+</div>
+{% endblock %}

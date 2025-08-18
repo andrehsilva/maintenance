@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Gerenciar Tarefas{% endblock %}
+{% block header %}Painel de Acompanhamento de Tarefas{% endblock %}
+
+{% block content %}
+<div class="sm:flex sm:items-center mb-6">
+    <div class="sm:flex-auto">
+        <p class="mt-2 text-sm text-gray-700">Acompanhe o status das tarefas atribuídas a cada técnico.</p>
+    </div>
+    <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+        <a href="{{ url_for('create_task') }}" class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+            <i class="fas fa-plus mr-2"></i>Nova Tarefa
+        </a>
+    </div>
+</div>
+
+<div class="space-y-4">
+    {% for task in tasks %}
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="flex justify-between items-start">
+            <div>
+                <h3 class="text-base font-semibold leading-6 text-gray-900">{{ task.title }}</h3>
+                <p class="mt-1 text-sm text-gray-600">{{ task.description or 'Sem descrição detalhada.'}}</p>
+            </div>
+            <!-- Botões de Ação do Admin -->
+            <div class="flex-shrink-0 ml-4 flex items-center gap-3">
+                <a href="{{ url_for('edit_task', task_id=task.id) }}" class="text-indigo-600 hover:text-indigo-800" title="Editar Tarefa">
+                    <i class="fas fa-pencil-alt"></i>
+                </a>
+                <form action="{{ url_for('delete_task', task_id=task.id) }}" method="POST" 
+                      onsubmit="openConfirmationModal(event, 'Deletar Tarefa', 'Tem certeza que deseja deletar esta tarefa e todas as suas atribuições? Esta ação não pode ser desfeita.')">
+                    <button type="submit" class="text-red-600 hover:text-red-800" title="Deletar Tarefa">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="mt-4 border-t border-gray-200 pt-4">
+            <h4 class="text-xs font-medium text-gray-500 uppercase">Acompanhamento</h4>
+            <ul class="mt-2 divide-y divide-gray-100">
+                {% for assignment in task.assignments %}
+                <li class="flex items-center justify-between py-2">
+                    <span class="text-sm font-medium text-gray-900">{{ assignment.technician.username }}</span>
+                    {% if assignment.status == 'Concluído' %}
+                        <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Concluído</span>
+                    {% elif assignment.status == 'Parado' %}
+                        <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Parado</span>
+                    {% else %}
+                        <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Não iniciado</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% else %}
+     <div class="text-center py-12">
+        <i class="fas fa-clipboard-check text-4xl text-gray-300"></i>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">Nenhuma tarefa criada</h3>
+        <p class="mt-1 text-sm text-gray-500">Comece criando uma nova tarefa para sua equipe.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full bg-gray-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumo do Equipamento - {{ equipment.code }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+      :root {
+        --cor-primaria: #4f46e5; /* Cor indigo-600 do Tailwind */
+      }
+      .text-primary-600 { color: var(--cor-primaria); }
+      .bg-primary-600 { background-color: var(--cor-primaria); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Header com a identidade visual -->
+    <nav class="bg-gray-800 shadow-md">
+        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-16 items-center justify-between">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                       <a href="#" class="flex items-center space-x-3">
+                           <div class="bg-primary-600 text-white p-2 rounded-lg shadow-sm">
+                               <i class="fas fa-rocket text-lg"></i>
+                           </div>
+                           <span class="text-xl font-bold text-white">
+                                   Sacada<span class="text-primary-600"> Gear</span> <i class="fa-solid fa-gears"></i>
+                               </span>
+                       </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="mx-auto max-w-4xl py-6 px-4 sm:px-6 lg:px-8">
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <!-- Cabeçalho do Equipamento -->
+                <div class="bg-gray-50 p-4 sm:p-6 border-b border-gray-200">
+                    <div class="flex items-center gap-4">
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-900">{{ equipment.code }} - {{ equipment.model }}</h1>
+                        {% if equipment.status == 'Em dia' %}
+                            <span class="inline-flex items-center rounded-md bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">Em Dia</span>
+                        {% elif equipment.status == 'Próximo do vencimento' %}
+                            <span class="inline-flex items-center rounded-md bg-yellow-100 px-2.5 py-1 text-xs font-semibold text-yellow-800">Atenção</span>
+                        {% else %}
+                            <span class="inline-flex items-center rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">Vencido</span>
+                        {% endif %}
+                    </div>
+                    <p class="mt-1 text-sm text-gray-600">{{ equipment.description or 'Equipamento sem descrição detalhada.' }}</p>
+                </div>
+
+                <!-- Grid de Informações -->
+                <div class="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Coluna de Detalhes -->
+                    <div class="space-y-4">
+                        <h3 class="font-semibold text-gray-800 border-b pb-2">Detalhes do Equipamento</h3>
+                        <div class="text-sm text-gray-600 space-y-2">
+                            <p><i class="fas fa-map-marker-alt fa-fw mr-2 text-gray-400"></i><strong>Local:</strong> {{ equipment.location }}</p>
+                            <p><i class="fas fa-calendar-alt fa-fw mr-2 text-gray-400"></i><strong>Instalado em:</strong> {{ equipment.install_date.strftime('%d/%m/%Y') if equipment.install_date else 'N/A' }}</p>
+                            <p><i class="fas fa-user-cog fa-fw mr-2 text-gray-400"></i><strong>Técnico Resp.:</strong> {{ equipment.operator.username }}</p>
+                            <p><i class="fas fa-calendar-check fa-fw mr-2 text-gray-400"></i><strong>Última Manutenção:</strong> {{ equipment.last_maintenance_date.strftime('%d/%m/%Y') if equipment.last_maintenance_date else 'N/A' }}</p>
+                            <p><i class="fas fa-calendar-day fa-fw mr-2 text-gray-400"></i><strong>Próxima Manutenção:</strong> {{ equipment.next_maintenance_date.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                    </div>
+                    <!-- Coluna do Cliente -->
+                    <div class="space-y-4">
+                        <h3 class="font-semibold text-gray-800 border-b pb-2">Informações do Cliente</h3>
+                        <div class="text-sm text-gray-600 space-y-2">
+                            <p><i class="fas fa-building fa-fw mr-2 text-gray-400"></i><strong>Cliente:</strong> {{ equipment.client.name }}</p>
+                            <p><i class="fas fa-road fa-fw mr-2 text-gray-400"></i><strong>Endereço:</strong> {{ equipment.client.address or 'N/A' }}</p>
+                            <p><i class="fas fa-user fa-fw mr-2 text-gray-400"></i><strong>Contato:</strong> {{ equipment.client.contact_person or 'N/A' }}</p>
+                            <p class="flex items-center"><i class="fas fa-phone fa-fw mr-2 text-gray-400"></i><strong>Telefone:</strong>
+                                {% if equipment.client.phone %}
+                                    {% set cleaned_phone = equipment.client.phone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '') %}
+                                    <a href="https://wa.me/55{{ cleaned_phone }}" target="_blank" class="ml-1 text-green-600 hover:underline">
+                                        {{ equipment.client.phone }}
+                                    </a>
+                                {% else %}
+                                    <span class="ml-1">N/A</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Histórico de Manutenções -->
+                <div class="p-4 sm:p-6 border-t border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Histórico de Manutenções</h2>
+                    <ul role="list" class="-mb-6">
+                        {% for record in history_records %}
+                        <li>
+                            <div class="relative pb-6">
+                                {% if not loop.last %}
+                                <span class="absolute left-3 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                {% endif %}
+                                <div class="relative flex space-x-3 items-start">
+                                    <div>
+                                        <span class="h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center ring-4 ring-white">
+                                            <i class="fas fa-wrench text-white text-xs"></i>
+                                        </span>
+                                    </div>
+                                    <div class="min-w-0 flex-1 pt-0.5">
+                                        <p class="text-sm text-gray-600">
+                                            <strong class="font-medium text-gray-900">{{ record.category }}</strong> em {{ record.maintenance_date.strftime('%d/%m/%Y') }}
+                                        </p>
+                                        <p class="mt-1 text-sm text-gray-700">{{ record.description }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li>
+                            <div class="text-center py-5">
+                                <p class="text-sm text-gray-500">Nenhum registro de manutenção para este equipamento.</p>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

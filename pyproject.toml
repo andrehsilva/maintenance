@@ -1,0 +1,13 @@
+[project]
+name = "maintenance"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "flask>=3.1.1",
+    "flask-login>=0.6.3",
+    "flask-sqlalchemy>=3.1.1",
+    "qrcode[pil]>=8.2",
+    "werkzeug>=3.1.3",
+]

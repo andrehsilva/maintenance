@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full bg-gray-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sacadaweb Ativos{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <style>
+      :root {
+        --cor-primaria: #4f46e5; /* Cor indigo-600 do Tailwind */
+      }
+      .text-primary-600 { color: var(--cor-primaria); }
+      .bg-primary-600 { background-color: var(--cor-primaria); }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+<body class="h-full">
+    <div class="min-h-full">
+        <nav class="bg-gray-800">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="flex h-16 items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                           <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('login') }}" class="flex items-center space-x-3 rtl:space-x-reverse">
+                               <div class="bg-primary-600 text-white p-2 rounded-lg shadow-sm">
+                                   <i class="fas fa-rocket text-lg"></i>
+                               </div>
+                               <span class="text-xl font-bold text-white">
+                                   Sacada<span class="text-primary-600"> Gear</span> <i class="fa-solid fa-gears"></i>
+                               </span>
+                           </a>
+                        </div>
+                        <div class="hidden md:block">
+                            <div class="ml-10 flex items-baseline space-x-4">
+                                {% if current_user.is_authenticated %}
+                                    <a href="{{ url_for('dashboard') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Dashboard</a>
+                                    <a href="{{ url_for('technician_tasks') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Tarefas</a>
+                                
+                                    {% if current_user.role == 'admin' %}
+                                    <a href="{{ url_for('manage_settings') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Configurações</a>
+                                    <a href="{{ url_for('client_list') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Clientes</a>
+                                    <a href="{{ url_for('financial_report') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Financeiro</a>
+                                    <a href="{{ url_for('full_history') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Histórico Completo</a>
+                                    <a href="{{ url_for('archived_list') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Arquivados</a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-4 flex items-center md:ml-6">
+                            {% if current_user.is_authenticated %}
+                            <span class="text-gray-400 text-sm mr-4">Olá, {{ current_user.username }} ({{ current_user.role }})</span>
+                            <a href="{{ url_for('logout') }}" class="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700">Sair</a>
+                            {% else %}
+                            <a href="{{ url_for('login') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Login</a>
+                            <a href="{{ url_for('register') }}" class="ml-4 rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">Cadastrar</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="-mr-2 flex md:hidden">
+                        <button type="button" id="open-menu-button" class="inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800" aria-controls="mobile-menu" aria-expanded="false">
+                            <span class="sr-only">Abrir menu principal</span>
+                            <i class="fas fa-bars text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:hidden hidden" id="mobile-menu">
+                {% if current_user.is_authenticated %}
+                <div class="fixed inset-0 bg-gray-800 bg-opacity-75 z-20" id="mobile-menu-overlay"></div>
+                <div class="fixed inset-y-0 left-0 w-64 bg-gray-800 z-30 p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xl font-bold text-white">Menu</span>
+                        <button type="button" id="close-menu-button" class="p-2 text-gray-400 hover:text-white">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-1">
+                        <a href="{{ url_for('dashboard') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
+                        <a href="{{ url_for('technician_tasks') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Tarefas</a>
+                        {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('client_list') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Clientes</a>
+                        <a href="{{ url_for('full_history') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Histórico Completo</a>
+                        <a href="{{ url_for('archived_list') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Arquivados</a>
+                        {% endif %}
+                    </div>
+                    <div class="absolute bottom-0 left-0 w-full border-t border-gray-700 pb-3 pt-4">
+                        <div class="flex items-center px-5">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-user-circle text-4xl text-gray-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <div class="text-base font-medium leading-none text-white">{{ current_user.username }}</div>
+                                <div class="text-sm font-medium leading-none text-gray-400">{{ current_user.role }}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 space-y-1 px-2">
+                            <a href="{{ url_for('logout') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Sair</a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </nav>
+
+        <header class="bg-white shadow-sm">
+            <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+                <h1 class="text-lg sm:text-xl font-bold tracking-tight text-gray-900">{% block header %}{% endblock %}</h1>
+            </div>
+        </header>
+        <main>
+            <div class="mx-auto max-w-7xl py-4 px-4 sm:px-6 lg:px-8">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="rounded-md bg-{{ 'green' if category == 'success' else 'red' if category == 'danger' else 'yellow' if category == 'warning' else 'blue' }}-50 p-4 mb-4">
+                                <p class="text-sm font-medium text-{{ 'green' if category == 'success' else 'red' if category == 'danger' else 'yellow' if category == 'warning' else 'blue' }}-800">{{ message }}</p>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- ADICIONADO: Estrutura do Modal de Confirmação -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2" id="modal-title">Confirmar Ação</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500" id="modal-message">Você tem certeza que deseja prosseguir com esta ação? Ela não pode ser desfeita.</p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="modal-cancel-button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md mr-2 hover:bg-gray-300">Cancelar</button>
+                    <button id="modal-confirm-button" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Lógica do menu mobile
+            const openMenuButton = document.getElementById('open-menu-button');
+            const closeMenuButton = document.getElementById('close-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const overlay = document.getElementById('mobile-menu-overlay');
+
+            const toggleMenu = () => {
+                if (mobileMenu) {
+                    mobileMenu.classList.toggle('hidden');
+                }
+            };
+
+            if (openMenuButton) openMenuButton.addEventListener('click', toggleMenu);
+            if (closeMenuButton) closeMenuButton.addEventListener('click', toggleMenu);
+            if (overlay) overlay.addEventListener('click', toggleMenu);
+
+            // ADICIONADO: Lógica do Modal de Confirmação
+            const modal = document.getElementById('confirmation-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const cancelButton = document.getElementById('modal-cancel-button');
+            const confirmButton = document.getElementById('modal-confirm-button');
+            let formToSubmit = null;
+
+            // Função para abrir o modal
+            window.openConfirmationModal = (event, title, message) => {
+                event.preventDefault(); // Impede o envio imediato do formulário
+                formToSubmit = event.target.closest('form');
+                modalTitle.textContent = title || 'Confirmar Ação';
+                modalMessage.textContent = message || 'Você tem certeza que deseja prosseguir? Esta ação não pode ser desfeita.';
+                modal.classList.remove('hidden');
+            };
+
+            // Função para fechar o modal
+            const closeModal = () => {
+                modal.classList.add('hidden');
+                formToSubmit = null;
+            };
+
+            // Eventos dos botões do modal
+            cancelButton.addEventListener('click', closeModal);
+            confirmButton.addEventListener('click', () => {
+                if (formToSubmit) {
+                    formToSubmit.submit();
+                }
+                closeModal();
+            });
+        });
+    </script>
+</body>
+</html>

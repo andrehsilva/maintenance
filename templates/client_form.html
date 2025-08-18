@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+{% block content %}
+<div class="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
+    <form method="POST">
+        <div class="space-y-6">
+            <div>
+                <label for="name" class="block text-sm font-medium leading-6 text-gray-900">Nome do Cliente *</label>
+                <div class="mt-2">
+                    <input type="text" name="name" id="name" value="{{ client.name if client else '' }}" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400" placeholder="Ex: Matriz Principal">
+                </div>
+            </div>
+            <div>
+                <label for="address" class="block text-sm font-medium leading-6 text-gray-900">Endereço</label>
+                <div class="mt-2">
+                    <input type="text" name="address" id="address" value="{{ client.address if client else '' }}" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400" placeholder="Ex: Av. Brasil, 123 - Centro">
+                </div>
+            </div>
+            <div>
+                <label for="contact_person" class="block text-sm font-medium leading-6 text-gray-900">Pessoa de Contato</label>
+                <div class="mt-2">
+                    <input type="text" name="contact_person" id="contact_person" value="{{ client.contact_person if client else '' }}" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400" placeholder="Ex: João da Silva">
+                </div>
+            </div>
+            <div>
+                <label for="phone" class="block text-sm font-medium leading-6 text-gray-900">Telefone</label>
+                <div class="mt-2">
+                    <input type="text" name="phone" id="phone" value="{{ client.phone if client else '' }}" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400" placeholder="Ex: (11) 99999-8888">
+                </div>
+            </div>
+        </div>
+        <div class="mt-8 flex items-center justify-end gap-x-6">
+            <a href="{{ url_for('client_list') }}" class="text-sm font-semibold leading-6 text-gray-900">Cancelar</a>
+            <button type="submit" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">Salvar Cliente</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
