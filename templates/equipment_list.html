@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Equipamentos - Sacadaweb Ativos{% endblock %}
+{% block header %}Gerenciamento de Equipamentos{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-md rounded-lg overflow-hidden">
+    <div class="p-4 sm:p-6 border-b border-gray-200">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex-auto">
+                <h2 class="text-lg font-semibold text-gray-800">Lista de Equipamentos</h2>
+                <p class="mt-1 text-sm text-gray-600">Uma lista de todos os equipamentos ativos no sistema.</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex-shrink-0">
+                <a href="{{ url_for('new_equipment') }}" class="w-full justify-center inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">
+                    <i class="fas fa-plus mr-2"></i>Cadastrar Equipamento
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="hidden md:block">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Equipamento</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente / Localização</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Próxima Manutenção</th>
+                        <th scope="col" class="relative px-6 py-3"><span class="sr-only">Ações</span></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for equipment in equipments %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-indigo-100 rounded-full">
+                                    <i class="fas fa-microchip text-lg text-indigo-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ equipment.code }}</div>
+                                    <div class="text-sm text-gray-500">{{ equipment.model }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="font-medium text-gray-800">{{ equipment.client.name }}</div>
+                            <div class="text-gray-500">{{ equipment.location }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div>{{ equipment.next_maintenance_date.strftime('%d/%m/%Y') }}</div>
+                            {% if equipment.status == 'Em dia' %}
+                                <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Em dia</span>
+                            {% elif equipment.status == 'Próximo do vencimento' %}
+                                <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">Próximo</span>
+                            {% else %}
+                                <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Vencido</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
+                            <a href="{{ url_for('equipment_history', equipment_id=equipment.id) }}" class="text-gray-600 hover:text-indigo-600" title="Ver Histórico"><i class="fas fa-list-alt"></i></a>
+                            <a href="{{ url_for('edit_equipment', equipment_id=equipment.id) }}" class="text-indigo-600 hover:text-indigo-900" title="Editar"><i class="fas fa-pencil-alt"></i></a>
+                            <form action="{{ url_for('toggle_archive_equipment', equipment_id=equipment.id) }}" method="POST" class="inline" 
+                                  onsubmit="openConfirmationModal(event, 'Arquivar Equipamento', 'Tem certeza que deseja arquivar o equipamento \'{{ equipment.code }}\'?')">
+                                <button type="submit" class="text-yellow-600 hover:text-yellow-900" title="Arquivar">
+                                    <i class="fas fa-archive"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-10 text-sm text-gray-500">
+                            <i class="fas fa-box-open text-4xl text-gray-300"></i>
+                            <h3 class="mt-2 text-sm font-semibold text-gray-900">Nenhum equipamento cadastrado</h3>
+                            <p class="mt-1 text-sm text-gray-500">Comece adicionando um novo equipamento.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="md:hidden p-4 space-y-4 bg-gray-50">
+        {% for equipment in equipments %}
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-bold text-gray-900">{{ equipment.code }}</h3>
+                    <p class="text-sm text-gray-600">{{ equipment.model }}</p>
+                </div>
+                {% if equipment.status == 'Em dia' %}
+                    <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Em dia</span>
+                {% elif equipment.status == 'Próximo do vencimento' %}
+                    <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">Próximo</span>
+                {% else %}
+                    <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Vencido</span>
+                {% endif %}
+            </div>
+            <div class="mt-3 border-t border-gray-200 pt-3 text-sm text-gray-600 space-y-2">
+                <p class="flex items-start"><i class="fas fa-building fa-fw mr-2 mt-1 text-gray-400"></i> <span>{{ equipment.client.name }}</span></p>
+                <p class="flex items-start"><i class="fas fa-map-marker-alt fa-fw mr-2 mt-1 text-gray-400"></i> <span>{{ equipment.location }}</span></p>
+                <p class="flex items-center"><i class="fas fa-calendar-alt fa-fw mr-2 text-gray-400"></i> Próxima: {{ equipment.next_maintenance_date.strftime('%d/%m/%Y') }}</p>
+            </div>
+            <div class="mt-4 border-t border-gray-200 pt-3 flex justify-end items-center gap-4">
+                 <form action="{{ url_for('toggle_archive_equipment', equipment_id=equipment.id) }}" method="POST" 
+                      onsubmit="openConfirmationModal(event, 'Arquivar Equipamento', 'Tem certeza que deseja arquivar o equipamento \'{{ equipment.code }}\'?')">
+                    <button type="submit" class="font-medium text-yellow-600 hover:text-yellow-900">Arquivar</button>
+                </form>
+                <a href="{{ url_for('equipment_history', equipment_id=equipment.id) }}" class="font-medium text-gray-600 hover:text-indigo-600">Histórico</a>
+                <a href="{{ url_for('edit_equipment', equipment_id=equipment.id) }}" class="font-medium text-indigo-600 hover:text-indigo-900">Editar</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-box-open text-4xl text-gray-300"></i>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">Nenhum equipamento cadastrado</h3>
+            <p class="mt-1 text-sm text-gray-500">Comece adicionando um novo equipamento.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

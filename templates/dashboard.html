@@ -84,16 +84,7 @@
                     {% endif %}
                 </p>
             </div>
-            <div class="mt-4 sm:mt-0 sm:ml-4 flex-shrink-0 flex flex-col sm:flex-row gap-2">
-                {% if current_user.role == 'admin' %}
-                <a href="{{ url_for('full_history') }}" class="w-full sm:w-auto justify-center inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                    <i class="fas fa-history mr-2"></i>Histórico Completo
-                </a>
-                <a href="{{ url_for('new_equipment') }}" class="w-full sm:w-auto justify-center inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
-                    <i class="fas fa-plus mr-2"></i>Novo Equipamento
-                </a>
-                {% endif %}
-            </div>
+            
         </div>
 
         <div class="space-y-4">
@@ -154,18 +145,11 @@
                                     <span class="ml-2">{{ equipment.next_maintenance_date.strftime('%d/%m/%Y') }}</span>
                                 </div>
                             </div>
-                            <div class="mt-4 flex items-center justify-start md:justify-end gap-2">
-                                {% if current_user.role == 'admin' %}
-                                <form action="{{ url_for('toggle_archive_equipment', equipment_id=equipment.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja arquivar este equipamento?');">
-                                    <button type="submit" title="Arquivar" class="flex items-center justify-center h-8 w-8 rounded bg-yellow-500 text-white shadow-sm hover:bg-yellow-600"><i class="fas fa-archive text-xs"></i></button>
-                                </form>
-                                {% endif %}
-                                
+                            <div class="mt-4 flex items-center justify-start md:justify-end gap-2">                                
                                 <a href="{{ url_for('equipment_history', equipment_id=equipment.id) }}" title="Histórico" class="flex items-center justify-center h-8 w-8 rounded bg-gray-600 text-white shadow-sm hover:bg-gray-700"><i class="fas fa-list-alt text-xs"></i></a>
                                 <a href="{{ url_for('new_maintenance_history', equipment_id=equipment.id) }}" title="Registrar Manutenção" class="flex items-center justify-center h-8 w-8 rounded bg-blue-600 text-white shadow-sm hover:bg-blue-700"><i class="fas fa-wrench text-xs"></i></a>
                                 {% if current_user.role == 'admin' %}
                                 <a href="{{ url_for('display_qrcode', code=equipment.code) }}" title="Gerar QR Code" class="flex items-center justify-center h-8 w-8 rounded bg-gray-800 text-white shadow-sm hover:bg-black"><i class="fas fa-qrcode text-xs"></i></a>
-                                <a href="{{ url_for('edit_equipment', equipment_id=equipment.id) }}" title="Editar" class="flex items-center justify-center h-8 w-8 rounded bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"><i class="fas fa-pencil-alt text-xs"></i></a>
                                 {% endif %}
                             </div>
                         </div>

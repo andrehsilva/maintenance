@@ -75,8 +75,8 @@
                     <div class="sm:col-span-2">
                         <label for="install_date" class="block text-sm font-medium leading-6 text-gray-900">Data de Instalação</label>
                         <div class="mt-2">
-                            <input type="date" name="install_date" id="install_date" value="{{ (form_data.get('install_date').strftime('%Y-%m-%d') if form_data.get('install_date')) or '' }}" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
-                        </div>
+                            <input type="date" name="install_date" id="install_date" 
+                                    value="{{ form_data.install_date or (equipment.install_date.strftime('%Y-%m-%d') if equipment and equipment.install_date) or '' }}" ...> </div>
                     </div>
                     
                     <div class="sm:col-span-2">

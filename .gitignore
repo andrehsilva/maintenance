@@ -8,3 +8,22 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Ambientes Virtuais
+.venv/
+venv/
+__pycache__/
+
+# Arquivos de Cache e compilados do Python
+*.pyc
+*.pyo
+*.pyd
+
+# Banco de Dados
+*.db
+*.sqlite3
+instance/
+
+# Arquivos de IDEs
+.vscode/
+.idea/

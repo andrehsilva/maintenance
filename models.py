@@ -5,7 +5,7 @@ from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import desc
-
+from flask import url_for
 # Importa a instância 'db' do arquivo de extensões
 from extensions import db
 
@@ -37,6 +37,8 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
+
+
 class Client(db.Model):
     """Modelo para os clientes."""
     id = db.Column(db.Integer, primary_key=True)
@@ -45,10 +47,14 @@ class Client(db.Model):
     contact_person = db.Column(db.String(100), nullable=True)
     phone = db.Column(db.String(20), nullable=True)
     equipments = db.relationship('Equipment', backref='client', lazy=True)
+    
+    # ADICIONE ESTA LINHA
+    is_archived = db.Column(db.Boolean, default=False, nullable=False)
 
     def __repr__(self):
         return f'<Client {self.name}>'
-
+    
+    
 class Equipment(db.Model):
     """Modelo para os equipamentos."""
     id = db.Column(db.Integer, primary_key=True)
@@ -125,7 +131,24 @@ class TaskAssignment(db.Model):
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     status = db.Column(db.String(50), default='Não iniciado', nullable=False)
+    observation = db.Column(db.Text, nullable=True) # Campo para as anotações do técnico
     technician = db.relationship('User')
 
     def __repr__(self):
         return f'<TaskAssignment for Task {self.task_id} to User {self.user_id}>'
+    
+
+
+class Notification(db.Model):
+    """Modelo para as notificações no sistema."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message = db.Column(db.String(255), nullable=False)
+    url = db.Column(db.String(255), nullable=True) # Link para onde a notificação leva
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('notifications', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<Notification {self.id} for User {self.user_id}>'

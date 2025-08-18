@@ -5,21 +5,21 @@ from functools import wraps
 
 import click
 
-
 import io
+import re
 import qrcode
 from flask import send_file
-
-from flask import (Flask, abort, flash, redirect, render_template, request,
-                   url_for)
+from datetime import date
+from flask import (Flask, abort, flash, redirect, render_template, request, url_for)
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import desc, func
 from sqlalchemy.orm import joinedload, subqueryload
 
 # Importa as extensões e os modelos dos novos arquivos
 from extensions import db, login_manager
-from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment,
-                    User)
+from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification)
+
+
 
 # --- Função de Criação da Aplicação (App Factory) ---
 def create_app():
@@ -42,6 +42,17 @@ def create_app():
     login_manager.login_message = 'Por favor, faça o login para acessar esta página.'
     login_manager.login_message_category = 'info'
 
+    @app.context_processor
+    def inject_notifications():
+        if current_user.is_authenticated:
+            unread_notifications_count = current_user.notifications.filter_by(is_read=False).count()
+            recent_notifications = current_user.notifications.order_by(desc(Notification.timestamp)).limit(5).all()
+            return dict(
+                unread_notifications_count=unread_notifications_count,
+                recent_notifications=recent_notifications
+            )
+        return dict(unread_notifications_count=0, recent_notifications=[])
+
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(User, int(user_id))
@@ -55,8 +66,17 @@ def create_app():
 # --- Registro de Rotas ---
 def register_routes(app):
     """Registra todas as rotas da aplicação."""
-    
+
+    # Em app.py, dentro de register_routes(app)
     MAINTENANCE_CATEGORIES = ['Manutenção Preventiva', 'Manutenção Corretiva', 'Manutenção Proativa']
+
+    def notify_admins(message, url, excluded_user_id=None):
+        """Cria uma notificação para todos os administradores."""
+        admins = User.query.filter_by(role='admin').all()
+        for admin in admins:
+            if admin.id != excluded_user_id:
+                notif = Notification(user_id=admin.id, message=message, url=url)
+                db.session.add(notif)
 
     def admin_required(f):
         @wraps(f)
@@ -66,6 +86,99 @@ def register_routes(app):
                 return redirect(url_for('dashboard'))
             return f(*args, **kwargs)
         return decorated_function
+
+    # --- ROTAS DE GERENCIAMENTO DE USUÁRIOS (ADMIN) ---
+    @app.route('/users')
+    @login_required
+    @admin_required
+    def user_list():
+        """Exibe uma lista de todos os usuários."""
+        users = User.query.order_by(User.username).all()
+        return render_template('user_list.html', users=users)
+
+    @app.route('/user/new', methods=['GET', 'POST'])
+    @login_required
+    @admin_required
+    def create_user():
+        """Cria um novo usuário (admin ou técnico)."""
+        if request.method == 'POST':
+            username = request.form.get('username')
+            password = request.form.get('password')
+            role = request.form.get('role')
+
+            if not username or not password or not role:
+                flash('Todos os campos são obrigatórios.', 'danger')
+                return render_template('user_form.html', title="Criar Novo Usuário", user=None)
+
+            if User.query.filter_by(username=username).first():
+                flash('Este nome de usuário já está em uso.', 'warning')
+                return render_template('user_form.html', title="Criar Novo Usuário", user=None, form_data=request.form)
+            
+            new_user = User(username=username, role=role)
+            new_user.set_password(password)
+            db.session.add(new_user)
+            db.session.commit()
+            flash(f'Usuário "{username}" criado com sucesso!', 'success')
+            return redirect(url_for('user_list'))
+            
+        return render_template('user_form.html', title="Criar Novo Usuário", user=None, form_data={})
+
+    @app.route('/user/edit/<int:user_id>', methods=['GET', 'POST'])
+    @login_required
+    @admin_required
+    def edit_user(user_id):
+        user = db.session.get(User, user_id)
+        if not user:
+            abort(404)
+            
+        if request.method == 'POST':
+            username = request.form.get('username')
+            password = request.form.get('password') # Senha é opcional na edição
+            role = request.form.get('role')
+
+            # Verifica se o novo username já está em uso por outro usuário
+            existing_user = User.query.filter(User.username == username, User.id != user_id).first()
+            if existing_user:
+                flash('Este nome de usuário já está em uso por outra conta.', 'warning')
+                return render_template('user_form.html', title="Editar Usuário", user=user, form_data=request.form)
+
+            user.username = username
+            user.role = role
+            # Só atualiza a senha se uma nova for fornecida
+            if password:
+                user.set_password(password)
+            
+            db.session.commit()
+            flash(f'Usuário "{username}" atualizado com sucesso!', 'success')
+            return redirect(url_for('user_list'))
+
+        return render_template('user_form.html', title="Editar Usuário", user=user, form_data=user.__dict__)
+
+    @app.route('/user/delete/<int:user_id>', methods=['POST'])
+    @login_required
+    @admin_required
+    def delete_user(user_id):
+        user_to_delete = db.session.get(User, user_id)
+        if not user_to_delete:
+            flash('Usuário não encontrado.', 'danger')
+            return redirect(url_for('user_list'))
+        
+        # Impede que o admin se auto-delete
+        if user_to_delete.id == current_user.id:
+            flash('Você não pode excluir sua própria conta.', 'danger')
+            return redirect(url_for('user_list'))
+            
+        # Impede a exclusão se houver itens associados (exemplo com equipamentos)
+        if user_to_delete.equipments:
+             flash(f'Não é possível excluir o usuário "{user_to_delete.username}", pois ele está associado a equipamentos.', 'danger')
+             return redirect(url_for('user_list'))
+
+        db.session.delete(user_to_delete)
+        db.session.commit()
+        flash(f'Usuário "{user_to_delete.username}" excluído com sucesso.', 'success')
+        return redirect(url_for('user_list'))
+    
+    
 
     @app.route('/')
     @app.route('/dashboard')
@@ -176,41 +289,77 @@ def register_routes(app):
         return redirect(url_for('login'))
 
     # --- Rotas de Gerenciamento de Equipamentos ---
+    # --- Rotas de Gerenciamento de Equipamentos ---
+    @app.route('/equipments')
+    @login_required
+    @admin_required
+    def equipment_list():
+        """Exibe uma lista de todos os equipamentos não arquivados."""
+        equipments = Equipment.query.filter_by(is_archived=False).order_by(Equipment.code).all()
+        return render_template('equipment_list.html', equipments=equipments)
+
+
     @app.route('/equipment/new', methods=['GET', 'POST'])
     @login_required
     @admin_required
     def new_equipment():
-        clients = Client.query.order_by(Client.name).all()
+        clients = Client.query.filter_by(is_archived=False).order_by(Client.name).all()
         technicians = User.query.filter_by(role='technician').order_by(User.username).all()
+
         if not clients:
             flash('Você precisa cadastrar um cliente antes de adicionar um equipamento.', 'warning')
             return redirect(url_for('new_client'))
+
         if request.method == 'POST':
             try:
                 code = request.form.get('code')
                 if Equipment.query.filter_by(code=code).first():
                     flash(f'O código de equipamento "{code}" já existe.', 'warning')
                     return render_template('equipment_form.html', title="Cadastrar Equipamento", clients=clients, technicians=technicians, equipment=None, form_data=request.form)
+
                 assigned_user_id = request.form.get('technician_id')
                 if not assigned_user_id:
                     flash('Você deve designar um técnico responsável.', 'danger')
                     return render_template('equipment_form.html', title="Cadastrar Equipamento", clients=clients, technicians=technicians, equipment=None, form_data=request.form)
+
                 equipment = Equipment(
-                    code=code, model=request.form.get('model'), location=request.form.get('location'),
+                    code=code,
+                    model=request.form.get('model'),
+                    location=request.form.get('location'),
                     description=request.form.get('description'),
                     install_date=datetime.strptime(request.form.get('install_date'), '%Y-%m-%d').date() if request.form.get('install_date') else None,
                     last_maintenance_date=datetime.strptime(request.form.get('last_maintenance_date'), '%Y-%m-%d').date() if request.form.get('last_maintenance_date') else None,
                     next_maintenance_date=datetime.strptime(request.form.get('next_maintenance_date'), '%Y-%m-%d').date(),
-                    user_id=assigned_user_id, client_id=request.form.get('client_id')
+                    user_id=assigned_user_id,
+                    client_id=request.form.get('client_id')
                 )
                 db.session.add(equipment)
                 db.session.commit()
+
+                # Lógica de Notificação (Já estava correta, mantida aqui)
+                admins = User.query.filter_by(role='admin').all()
+                for admin in admins:
+                    if admin.id != current_user.id:
+                        notif = Notification(user_id=admin.id, message=f"Novo equipamento '{equipment.code}' foi cadastrado por {current_user.username}.", url=url_for('equipment_history', equipment_id=equipment.id))
+                        db.session.add(notif)
+                if int(assigned_user_id) != current_user.id:
+                    notif_technician = Notification(user_id=int(assigned_user_id), message=f"O equipamento '{equipment.code}' foi atribuído a você.", url=url_for('equipment_history', equipment_id=equipment.id))
+                    db.session.add(notif_technician)
+                db.session.commit()
+
                 flash('Equipamento cadastrado com sucesso!', 'success')
                 return redirect(url_for('dashboard'))
+
             except Exception as e:
                 db.session.rollback()
                 flash(f'Erro ao cadastrar equipamento: {e}', 'danger')
-        return render_template('equipment_form.html', title="Cadastrar Novo Equipamento", clients=clients, technicians=technicians, equipment=None, form_data={})
+                return render_template('equipment_form.html', title="Cadastrar Equipamento", clients=clients, technicians=technicians, equipment=None, form_data=request.form)
+
+        # Lógica para GET (agora sem duplicação)
+        today_date = date.today().strftime('%Y-%m-%d')
+        form_data = {'install_date': today_date}
+        return render_template('equipment_form.html', title="Cadastrar Novo Equipamento", clients=clients, technicians=technicians, equipment=None, form_data=form_data)
+
 
     @app.route('/equipment/edit/<int:equipment_id>', methods=['GET', 'POST'])
     @admin_required
@@ -219,7 +368,7 @@ def register_routes(app):
         equipment = db.session.get(Equipment, equipment_id)
         if not equipment:
             abort(404)
-        clients = Client.query.order_by(Client.name).all()
+        clients = Client.query.filter_by(is_archived=False).order_by(Client.name).all()
         technicians = User.query.filter_by(role='technician').order_by(User.username).all()
         if request.method == 'POST':
             try:
@@ -242,6 +391,17 @@ def register_routes(app):
                 equipment.client_id = request.form.get('client_id')
                 equipment.user_id = assigned_user_id
                 db.session.commit()
+                admin_msg = f"Equipamento '{equipment.code}' atualizado por {current_user.username}."
+                admins = User.query.filter_by(role='admin').all()
+                for admin in admins:
+                    if admin.id != current_user.id:
+                        notif = Notification(user_id=admin.id, message=admin_msg, url=url_for('equipment_history', equipment_id=equipment.id))
+                        db.session.add(notif)
+                if int(assigned_user_id) != current_user.id:
+                    tech_msg = f"O equipamento '{equipment.code}' foi atualizado e está sob sua responsabilidade."
+                    notif_technician = Notification(user_id=int(assigned_user_id), message=tech_msg, url=url_for('equipment_history', equipment_id=equipment.id))
+                    db.session.add(notif_technician)
+                db.session.commit()
                 flash('Equipamento atualizado com sucesso!', 'success')
                 return redirect(url_for('dashboard'))
             except Exception as e:
@@ -261,9 +421,10 @@ def register_routes(app):
             flash(f'Equipamento "{equipment.code}" {"arquivado" if equipment.is_archived else "desarquivado"} com sucesso.', 'success')
         else:
             flash('Equipamento não encontrado.', 'danger')
-        if 'archived_list' in request.referrer:
-            return redirect(url_for('archived_list'))
-        return redirect(url_for('dashboard'))
+
+        # Redireciona de volta para a página de onde o usuário veio
+        # (Funciona para a lista de arquivados e para a nova lista de equipamentos)
+        return redirect(request.referrer or url_for('dashboard'))
 
     @app.route('/archived')
     @login_required
@@ -284,6 +445,8 @@ def register_routes(app):
         history_records = equipment.maintenance_history.all()
         return render_template('equipment_history.html', equipment=equipment, history_records=history_records)
 
+    # Em app.py
+
     @app.route('/history/new/<int:equipment_id>', methods=['GET', 'POST'])
     @login_required
     def new_maintenance_history(equipment_id):
@@ -292,6 +455,7 @@ def register_routes(app):
             abort(404)
         if current_user.role != 'admin' and equipment.user_id != current_user.id:
             abort(403)
+            
         if request.method == 'POST':
             try:
                 maintenance_date = datetime.strptime(request.form.get('maintenance_date'), '%Y-%m-%d').date()
@@ -299,22 +463,44 @@ def register_routes(app):
                 cost = float(cost_str.replace(',', '.')) if cost_str else None
                 
                 history_entry = MaintenanceHistory(
-                    maintenance_date=maintenance_date, category=request.form.get('category'),
-                    description=request.form.get('description'), equipment_id=equipment_id,
+                    maintenance_date=maintenance_date, 
+                    category=request.form.get('category'),
+                    description=request.form.get('description'), 
+                    equipment_id=equipment_id,
                     technician_id=current_user.id,
                     cost=cost
                 )
                 equipment.last_maintenance_date = maintenance_date
                 db.session.add(history_entry)
-                db.session.commit()
+                db.session.commit() # Salva a manutenção primeiro
+    
+                # --- INÍCIO DA LÓGICA DE NOTIFICAÇÃO CORRIGIDA ---
+                # 1. Notificar todos os administradores
+                admin_msg = f"Nova manutenção em '{equipment.code}' registrada por {current_user.username}."
+                notify_admins(admin_msg, url_for('equipment_history', equipment_id=equipment.id), excluded_user_id=current_user.id)
+                
+                # 2. Notificar o técnico responsável pelo equipamento (se não for ele mesmo)
+                if equipment.user_id != current_user.id:
+                    tech_msg = f"Uma nova manutenção foi registrada no equipamento '{equipment.code}'."
+                    tech_notif = Notification(user_id=equipment.user_id, message=tech_msg, url=url_for('equipment_history', equipment_id=equipment.id))
+                    db.session.add(tech_notif)
+                
+                db.session.commit() # Salva as notificações
+                # --- FIM DA LÓGICA DE NOTIFICAÇÃO ---
+    
                 flash('Registro de manutenção adicionado com sucesso!', 'success')
                 return redirect(url_for('equipment_history', equipment_id=equipment_id))
+                
             except (ValueError, TypeError):
                 flash('Valor de custo inválido. Use um formato como 150.50.', 'danger')
             except Exception as e:
                 db.session.rollback()
                 flash(f'Erro ao adicionar registro: {e}', 'danger')
+                
         return render_template('maintenance_form.html', equipment=equipment, categories=MAINTENANCE_CATEGORIES, now=datetime.utcnow())
+
+
+
 
     @app.route('/history/edit/<int:history_id>', methods=['GET', 'POST'])
     @login_required
@@ -331,6 +517,17 @@ def register_routes(app):
                 history_record.description = request.form.get('description')
                 cost_str = request.form.get('cost')
                 history_record.cost = float(cost_str.replace(',', '.')) if cost_str else None
+                db.session.commit()
+                admin_msg = f"Registro de manutenção em '{history_record.equipment.code}' foi atualizado por {current_user.username}."
+                admins = User.query.filter_by(role='admin').all()
+                for admin in admins:
+                    if admin.id != current_user.id:
+                        notif = Notification(user_id=admin.id, message=admin_msg, url=url_for('equipment_history', equipment_id=history_record.equipment.id))
+                        db.session.add(notif)
+                if history_record.equipment.user_id != current_user.id:
+                    tech_msg = f"O registro de manutenção do equipamento '{history_record.equipment.code}' foi atualizado."
+                    notif_technician = Notification(user_id=history_record.equipment.user_id, message=tech_msg, url=url_for('equipment_history', equipment_id=history_record.equipment.id))
+                    db.session.add(notif_technician)
                 db.session.commit()
                 flash('Registro de manutenção atualizado com sucesso!', 'success')
                 return redirect(url_for('equipment_history', equipment_id=history_record.equipment_id))
@@ -353,6 +550,17 @@ def register_routes(app):
         try:
             db.session.delete(history_record)
             db.session.commit()
+            admin_msg = f"O registro de manutenção do equipamento '{history_record.equipment.code}' foi deletado por {current_user.username}."
+            admins = User.query.filter_by(role='admin').all()
+            for admin in admins:
+                if admin.id != current_user.id:
+                    notif = Notification(user_id=admin.id, message=admin_msg, url=url_for('equipment_history', equipment_id=history_record.equipment.id))
+                    db.session.add(notif)
+            if history_record.equipment.user_id != current_user.id:
+                tech_msg = f"Um registro de manutenção do equipamento '{history_record.equipment.code}' foi deletado."
+                notif_technician = Notification(user_id=history_record.equipment.user_id, message=tech_msg, url=url_for('equipment_history', equipment_id=history_record.equipment.id))
+                db.session.add(notif_technician)
+            db.session.commit()
             flash('Registro de manutenção deletado com sucesso.', 'success')
         except Exception as e:
             db.session.rollback()
@@ -368,9 +576,10 @@ def register_routes(app):
             joinedload(Equipment.client)
         ).order_by(Equipment.code).all()
         for eq in equipments:
+            # ADICIONE A ORDENAÇÃO AQUI
             eq.loaded_history = eq.maintenance_history.options(
                 joinedload(MaintenanceHistory.technician)
-            ).all()
+            ).order_by(desc(MaintenanceHistory.maintenance_date)).all()
         return render_template('full_history.html', equipments=equipments)
     
 
@@ -379,29 +588,49 @@ def register_routes(app):
     @login_required
     @admin_required
     def client_list():
-        clients = Client.query.order_by(Client.name).all()
+        # ALTERADO: Adicionado filtro .filter_by(is_archived=False)
+        clients = Client.query.filter_by(is_archived=False).order_by(Client.name).all()
         return render_template('client_list.html', clients=clients)
 
+
+    # Em app.py
     @app.route('/client/new', methods=['GET', 'POST'])
     @login_required
     @admin_required
     def new_client():
         if request.method == 'POST':
             name = request.form.get('name')
+            phone = request.form.get('phone')
+
+            # --- INÍCIO DA VALIDAÇÃO ---
+            if phone: # Apenas valida se um telefone foi digitado
+                # Limpa o telefone, deixando apenas os números
+                cleaned_phone = re.sub(r'\D', '', phone)
+                # Verifica se tem 10 ou 11 dígitos
+                if not re.match(r'^\d{10,11}$', cleaned_phone):
+                    flash('O número de telefone informado é inválido.', 'danger')
+                    # Retorna o formulário com os dados que o usuário já digitou
+                    return render_template('client_form.html', title="Novo Cliente", client=None)
+            # --- FIM DA VALIDAÇÃO ---
+
             if Client.query.filter_by(name=name).first():
                 flash('Já existe um cliente com este nome.', 'warning')
             else:
                 client = Client(
                     name=name, address=request.form.get('address'),
                     contact_person=request.form.get('contact_person'),
-                    phone=request.form.get('phone')
+                    phone=phone # Salva o telefone com a máscara
                 )
                 db.session.add(client)
                 db.session.commit()
                 flash('Cliente cadastrado com sucesso!', 'success')
                 return redirect(url_for('client_list'))
+            
         return render_template('client_form.html', title="Novo Cliente", client=None)
 
+
+
+    # Em app.py
     @app.route('/client/edit/<int:client_id>', methods=['GET', 'POST'])
     @login_required
     @admin_required
@@ -410,26 +639,61 @@ def register_routes(app):
         if not client:
             abort(404)
         if request.method == 'POST':
+            phone = request.form.get('phone')
+
+            # --- INÍCIO DA VALIDAÇÃO ---
+            if phone: # Apenas valida se um telefone foi digitado
+                cleaned_phone = re.sub(r'\D', '', phone)
+                if not re.match(r'^\d{10,11}$', cleaned_phone):
+                    flash('O número de telefone informado é inválido.', 'danger')
+                    return render_template('client_form.html', title="Editar Cliente", client=client)
+            # --- FIM DA VALIDAÇÃO ---
+
             client.name, client.address = request.form.get('name'), request.form.get('address')
-            client.contact_person, client.phone = request.form.get('contact_person'), request.form.get('phone')
+            client.contact_person = request.form.get('contact_person')
+            client.phone = phone
+            db.session.commit()
+            msg = f"O cliente '{client.name}' foi atualizado por {current_user.username}."
+            admins = User.query.filter_by(role='admin').all()
+            for admin in admins:
+                if admin.id != current_user.id:
+                    notif = Notification(user_id=admin.id, message=msg, url=url_for('client_list'))
+                    db.session.add(notif)
             db.session.commit()
             flash('Cliente atualizado com sucesso!', 'success')
             return redirect(url_for('client_list'))
-        return render_template('client_form.html', title="Editar Cliente", client=client)
 
-    @app.route('/client/delete/<int:client_id>', methods=['POST'])
+        return render_template('client_form.html', title="Editar Cliente", client=client)
+    
+
+
+    # arquivar cliente
+
+    @app.route('/client/archive/<int:client_id>', methods=['POST'])
     @login_required
     @admin_required
-    def delete_client(client_id):
+    def toggle_archive_client(client_id):
         client = db.session.get(Client, client_id)
         if client:
-            if client.equipments:
-                flash('Não é possível deletar um cliente que possui equipamentos associados.', 'danger')
-            else:
-                db.session.delete(client)
-                db.session.commit()
-                flash('Cliente deletado com sucesso!', 'success')
-        return redirect(url_for('client_list'))
+            # Inverte o status de arquivamento
+            client.is_archived = not client.is_archived
+            db.session.commit()
+            flash(f'Cliente "{client.name}" {"arquivado" if client.is_archived else "restaurado"} com sucesso.', 'success')
+        else:
+            flash('Cliente não encontrado.', 'danger')
+
+        # Redireciona de volta para a página de onde o usuário veio
+        return redirect(request.referrer or url_for('client_list'))
+    
+
+    @app.route('/clients/archived')
+    @login_required
+    @admin_required
+    def archived_clients():
+        archived = Client.query.filter_by(is_archived=True).order_by(Client.name).all()
+        return render_template('archived_clients.html', clients=archived)
+    
+
 
     # --- Rotas de Gerenciamento de Tarefas ---
     @app.route('/tasks')
@@ -501,6 +765,18 @@ def register_routes(app):
                     new_assignment = TaskAssignment(task_id=task_id, user_id=tech_id)
                     db.session.add(new_assignment)
                 db.session.commit()
+                admin_msg = f"Tarefa '{task.title}' foi atualizada por {current_user.username}."
+                admins = User.query.filter_by(role='admin').all()
+                for admin in admins:
+                    if admin.id != current_user.id:
+                        notif = Notification(user_id=admin.id, message=admin_msg, url=url_for('admin_tasks'))
+                        db.session.add(notif)
+                for assignment in task.assignments:
+                    if assignment.user_id != current_user.id:
+                        tech_msg = f"A tarefa '{task.title}' que está atribuída a você foi atualizada."
+                        notif_technician = Notification(user_id=assignment.user_id, message=tech_msg, url=url_for('technician_tasks'))
+                        db.session.add(notif_technician)
+                db.session.commit()
                 flash('Tarefa atualizada com sucesso!', 'success')
                 return redirect(url_for('admin_tasks'))
             except Exception as e:
@@ -519,28 +795,59 @@ def register_routes(app):
         try:
             db.session.delete(task)
             db.session.commit()
+            admin_msg = f"A tarefa '{task.title}' foi deletada por {current_user.username}."
+            admins = User.query.filter_by(role='admin').all()
+            for admin in admins:
+                if admin.id != current_user.id:
+                    notif = Notification(user_id=admin.id, message=admin_msg, url=url_for('admin_tasks'))
+                    db.session.add(notif)
+            for assignment in task.assignments:
+                if assignment.user_id != current_user.id:
+                    tech_msg = f"A tarefa '{task.title}' que estava atribuída a você foi deletada."
+                    notif_technician = Notification(user_id=assignment.user_id, message=tech_msg, url=url_for('technician_tasks'))
+                    db.session.add(notif_technician)
+            db.session.commit()
             flash('Tarefa deletada com sucesso.', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao deletar tarefa: {e}', 'danger')
         return redirect(url_for('admin_tasks'))
 
+    # Em app.py
+
     @app.route('/tasks/update_status/<int:assignment_id>', methods=['POST'])
     @login_required
     def update_task_status(assignment_id):
-        new_status = request.form.get('status')
         assignment = db.session.get(TaskAssignment, assignment_id)
         if not assignment:
             abort(404)
         if assignment.user_id != current_user.id and current_user.role != 'admin':
             abort(403)
+
         try:
+            # Pega os dados do formulário
+            new_status = request.form.get('status')
+            observation = request.form.get('observation') # <-- Pega a observação
+
+            # Atualiza os dados no banco
             assignment.status = new_status
+            assignment.observation = observation # <-- Salva a observação
+
             db.session.commit()
+
+            # Lógica de notificação (já estava correta, mantida aqui)
+            creator_id = assignment.task.creator_id
+            if creator_id != current_user.id:
+                admin_msg = f"O técnico {current_user.username} atualizou a tarefa '{assignment.task.title}' para '{new_status}'."
+                admin_notif = Notification(user_id=creator_id, message=admin_msg, url=url_for('admin_tasks'))
+                db.session.add(admin_notif)
+                db.session.commit()
+
             flash('Status da tarefa atualizado.', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao atualizar status: {e}', 'danger')
+
         return redirect(url_for('technician_tasks'))
     
     # --- Rotas de QR Code ---
@@ -578,31 +885,59 @@ def register_routes(app):
     @login_required
     @admin_required
     def financial_report():
-        clients = Client.query.order_by(Client.name).all()
+        # Buscando dados para os filtros
+        clients = Client.query.filter_by(is_archived=False).order_by(Client.name).all()
+        equipments = Equipment.query.filter_by(is_archived=False).order_by(Equipment.code).all()
+
+        # Pegando os valores dos filtros da URL
         client_id = request.args.get('client_id', type=int)
+        equipment_id = request.args.get('equipment_id', type=int) # <-- NOVO
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
+        # Construindo a query base
         query = db.session.query(MaintenanceHistory).join(Equipment)
-        
+
+        # Aplicando os filtros
         if client_id:
             query = query.filter(Equipment.client_id == client_id)
+        if equipment_id: # <-- NOVO
+            query = query.filter(MaintenanceHistory.equipment_id == equipment_id)
         if start_date_str:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             query = query.filter(MaintenanceHistory.maintenance_date >= start_date)
         if end_date_str:
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
             query = query.filter(MaintenanceHistory.maintenance_date <= end_date)
-            
+
         records = query.order_by(desc(MaintenanceHistory.maintenance_date)).all()
-        
+
         total_cost = sum(record.cost for record in records if record.cost is not None)
 
         return render_template('financial_report.html', 
                                clients=clients, 
+                               equipments=equipments, # <-- NOVO
                                records=records,
                                total_cost=total_cost,
                                filters=request.args)
+    
+
+
+
+    # ####Notificações
+
+    @app.route('/notifications/read/<int:notification_id>')
+    @login_required
+    def read_notification(notification_id):
+        notification = db.session.get(Notification, notification_id)
+        if notification and notification.user_id == current_user.id:
+            notification.is_read = True
+            db.session.commit()
+
+        # Se a notificação tiver uma URL, redireciona para ela. Senão, para o dashboard.
+        return redirect(notification.url or url_for('dashboard'))
+
+
 
 # --- Registro de Comandos CLI ---
 def register_commands(app):

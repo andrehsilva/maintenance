@@ -1,32 +1,43 @@
 {% extends "base.html" %}
+
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
+
+{% block head %}
+<script src="https://unpkg.com/imask"></script>
+{% endblock %}
+
 {% block content %}
 <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
-    <form method="POST">
+    <form method="POST" novalidate>
         <div class="space-y-6">
             <div>
                 <label for="name" class="block text-sm font-medium leading-6 text-gray-900">Nome do Cliente *</label>
                 <div class="mt-2">
-                    <input type="text" name="name" id="name" value="{{ client.name if client else '' }}" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400" placeholder="Ex: Matriz Principal">
+                    <input type="text" name="name" id="name" value="{{ client.name if client else request.form.name or '' }}" required maxlength="150" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600" placeholder="Ex: Matriz Principal">
                 </div>
             </div>
             <div>
                 <label for="address" class="block text-sm font-medium leading-6 text-gray-900">Endereço</label>
                 <div class="mt-2">
-                    <input type="text" name="address" id="address" value="{{ client.address if client else '' }}" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400" placeholder="Ex: Av. Brasil, 123 - Centro">
+                    <input type="text" name="address" id="address" value="{{ client.address if client else request.form.address or '' }}" maxlength="250" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400" placeholder="Ex: Av. Brasil, 123 - Centro">
                 </div>
             </div>
             <div>
                 <label for="contact_person" class="block text-sm font-medium leading-6 text-gray-900">Pessoa de Contato</label>
                 <div class="mt-2">
-                    <input type="text" name="contact_person" id="contact_person" value="{{ client.contact_person if client else '' }}" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400" placeholder="Ex: João da Silva">
+                    <input type="text" name="contact_person" id="contact_person" value="{{ client.contact_person if client else request.form.contact_person or '' }}" maxlength="100" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400" placeholder="Ex: João da Silva">
                 </div>
             </div>
             <div>
                 <label for="phone" class="block text-sm font-medium leading-6 text-gray-900">Telefone</label>
                 <div class="mt-2">
-                    <input type="text" name="phone" id="phone" value="{{ client.phone if client else '' }}" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400" placeholder="Ex: (11) 99999-8888">
+                    <input type="tel" name="phone" id="phone" value="{{ client.phone if client else request.form.phone or '' }}"
+                           class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600"
+                           placeholder="(XX) XXXXX-XXXX"
+                           pattern="\([0-9]{2}\) [0-9]{4,5}-[0-9]{4}"
+                           minlength="14" maxlength="15"
+                           title="O telefone deve estar no formato (XX) XXXXX-XXXX">
                 </div>
             </div>
         </div>
@@ -36,4 +47,18 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const phoneInput = document.getElementById('phone');
+        const phoneMaskOptions = {
+            mask: [
+                { mask: '(00) 0000-0000' },
+                { mask: '(00) 00000-0000' }
+            ]
+        };
+        const mask = IMask(phoneInput, phoneMaskOptions);
+    });
+</script>
+
 {% endblock %}

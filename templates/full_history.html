@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block title %}Histórico Completo de Manutenções{% endblock %}
 {% block header %}Histórico Completo de Manutenções{% endblock %}
 
@@ -10,60 +11,99 @@
         #printable-area { position: absolute; left: 0; top: 0; width: 100%; }
         .no-print { display: none; }
         a { text-decoration: none; color: inherit; }
+        .print-shadow-none { box-shadow: none !important; }
+        .print-bg-transparent { background-color: transparent !important; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="px-4 sm:px-6 lg:px-8">
-    <div class="sm:flex sm:items-center">
-        <div class="sm:flex-auto">
-            <p class="mt-2 text-sm text-gray-700">Tabela com todos os registros de manutenção. Use o botão para imprimir ou salvar como PDF.</p>
-        </div>
-        <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none no-print">
-            <button onclick="window.print()" type="button" class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
-                Imprimir / Salvar em PDF
-            </button>
-        </div>
-    </div>
-    <div id="printable-area" class="mt-8 flow-root">
-        <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-            <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                {% for equipment in equipments %}
-                    {% if equipment.maintenance_history.first() %}
-                        <div class="mb-10">
-                            <h3 class="text-base font-semibold leading-6 text-gray-900">
-                                Equipamento: {{ equipment.code }} - {{ equipment.model }} 
-                                <span class="text-sm font-normal text-gray-600">| Cliente: {{ equipment.client.name }}</span>
-                            </h3>
-                            <table class="min-w-full divide-y divide-gray-300 mt-4">
-                                <thead>
-                                    <tr>
-                                        <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3">Data</th>
-                                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Categoria</th>
-                                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Técnico</th>
-                                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Descrição</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white">
-                                    <!-- CORREÇÃO: Loop simplificado. A ordenação já vem do modelo. -->
-                                    {% for history in equipment.maintenance_history %}
-                                    <tr class="even:bg-gray-50">
-                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-3">{{ history.maintenance_date.strftime('%d/%m/%Y') }}</td>
-                                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ history.category }}</td>
-                                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ history.technician.username }}</td>
-                                        <td class="px-3 py-4 text-sm text-gray-500 max-w-md">
-                                            <p class="whitespace-pre-wrap">{{ history.description }}</p>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% endif %}
-                {% endfor %}
+<div class="space-y-8">
+    <div class="bg-white shadow-md rounded-lg p-4 sm:p-6 no-print">
+        <div class="sm:flex sm:items-center">
+            <div class="sm:flex-auto">
+                <h1 class="text-base font-semibold leading-6 text-gray-900">Relatório Geral</h1>
+                <p class="mt-2 text-sm text-gray-700">Relatório com todos os registros de manutenção, agrupados por equipamento.</p>
+            </div>
+            <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+                <button onclick="window.print()" type="button" class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+                    <i class="fas fa-print mr-2"></i>Imprimir / Salvar em PDF
+                </button>
             </div>
         </div>
+    </div>
+
+    <div id="printable-area" class="space-y-8">
+        {% set has_history = false %}
+        {% for equipment in equipments %}
+            {% if equipment.loaded_history %}
+                {% set has_history = true %}
+                <div class="bg-white shadow-md rounded-lg overflow-hidden print-shadow-none">
+                    <div class="p-4 sm:p-6 bg-gray-50 border-b border-gray-200 print-bg-transparent">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-indigo-100 rounded-full">
+                                <i class="fas fa-microchip text-lg text-indigo-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-base font-semibold leading-6 text-gray-900">{{ equipment.code }} - {{ equipment.model }}</h3>
+                                <p class="text-sm text-gray-500">Cliente: {{ equipment.client.name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-gray-50 print-bg-transparent">
+                                <tr>
+                                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:pl-6">Data</th>
+                                    <th scope="col" class="px-3 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                                    <th scope="col" class="px-3 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Técnico</th>
+                                    <th scope="col" class="px-3 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                                    <th scope="col" class="px-3 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for history in equipment.loaded_history %}
+                                <tr class="even:bg-gray-50 print-bg-transparent">
+                                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{{ history.maintenance_date.strftime('%d/%m/%Y') }}</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ history.category }}</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ history.technician.username }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-500 max-w-sm">
+                                        <p class="whitespace-pre-wrap">{{ history.description }}</p>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                        {{ "R$ %.2f"|format(history.cost) if history.cost is not none else 'N/A' }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="bg-gray-50 print-bg-transparent">
+                                {% set total_cost = namespace(value=0) %}
+                                {% for item in equipment.loaded_history %}
+                                    {% if item.cost is not none %}
+                                        {% set total_cost.value = total_cost.value + item.cost %}
+                                    {% endif %}
+                                {% endfor %}
+                                <tr>
+                                    <td colspan="5" class="px-6 py-3 text-right text-sm font-semibold text-gray-700">
+                                        Total para este equipamento: 
+                                        <span class="font-bold text-gray-900">{{ equipment.loaded_history|length }}</span> registro(s) | Custo Total: 
+                                        <span class="font-bold text-gray-900">R$ {{ "%.2f"|format(total_cost.value) }}</span>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        {% if not has_history %}
+        <div class="text-center py-12">
+            <i class="fas fa-file-alt text-4xl text-gray-300"></i>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">Nenhum registro de manutenção encontrado</h3>
+            <p class="mt-1 text-sm text-gray-500">Quando manutenções forem registradas, elas aparecerão aqui.</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

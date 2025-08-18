@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <style>
       :root {
@@ -14,47 +15,108 @@
       }
       .text-primary-600 { color: var(--cor-primaria); }
       .bg-primary-600 { background-color: var(--cor-primaria); }
+      [x-cloak] { display: none !important; }
     </style>
 
     {% block head %}{% endblock %}
 </head>
 <body class="h-full">
     <div class="min-h-full">
-        <nav class="bg-gray-800">
+        <nav class="bg-gray-800" x-data="{ mobileMenuOpen: false }">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 items-center justify-between">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                            <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('login') }}" class="flex items-center space-x-3 rtl:space-x-reverse">
-                               <div class="bg-primary-600 text-white p-2 rounded-lg shadow-sm">
-                                   <i class="fas fa-rocket text-lg"></i>
-                               </div>
-                               <span class="text-xl font-bold text-white">
-                                   Sacada<span class="text-primary-600"> Gear</span> <i class="fa-solid fa-gears"></i>
-                               </span>
+                               <div class="bg-primary-600 text-white p-2 rounded-lg shadow-sm"><i class="fas fa-rocket text-lg"></i></div>
+                               <span class="text-xl font-bold text-white">Sacada<span class="text-primary-600">Gear</span> <i class="fa-solid fa-gears"></i></span>
                            </a>
                         </div>
                         <div class="hidden md:block">
                             <div class="ml-10 flex items-baseline space-x-4">
                                 {% if current_user.is_authenticated %}
-                                    <a href="{{ url_for('dashboard') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Dashboard</a>
-                                    <a href="{{ url_for('technician_tasks') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Tarefas</a>
-                                
+                                    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Dashboard</a>
+                                    <a href="{{ url_for('technician_tasks') }}" class="{% if request.endpoint == 'technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Tarefas</a>
+                                    
                                     {% if current_user.role == 'admin' %}
-                                    <a href="{{ url_for('manage_settings') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Configurações</a>
-                                    <a href="{{ url_for('client_list') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Clientes</a>
-                                    <a href="{{ url_for('financial_report') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Financeiro</a>
-                                    <a href="{{ url_for('full_history') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Histórico Completo</a>
-                                    <a href="{{ url_for('archived_list') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Arquivados</a>
+                                    <div x-data="{ open: false }" class="relative">
+                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['client_list', 'new_client', 'edit_client', 'archived_clients'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
+                                            <span>Clientes</span><i class="fas fa-chevron-down ml-2 text-xs"></i>
+                                        </button>
+                                        <div x-show="open" x-cloak x-transition class="absolute left-0 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
+                                            <a href="{{ url_for('client_list') }}" class="{% if request.endpoint == 'client_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Listar Clientes</a>
+                                            <a href="{{ url_for('archived_clients') }}" class="{% if request.endpoint == 'archived_clients' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Arquivados</a>
+                                        </div>
+                                    </div>
+                                    
+                                    <div x-data="{ open: false }" class="relative">
+                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['equipment_list', 'new_equipment', 'edit_equipment', 'archived_list'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
+                                            <span>Equipamentos</span><i class="fas fa-chevron-down ml-2 text-xs"></i>
+                                        </button>
+                                        <div x-show="open" x-cloak x-transition class="absolute left-0 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
+                                            <a href="{{ url_for('equipment_list') }}" class="{% if request.endpoint == 'equipment_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Listar</a>
+                                            <a href="{{ url_for('new_equipment') }}" class="{% if request.endpoint == 'new_equipment' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Cadastrar Novo</a>
+                                            <div class="border-t border-gray-100 my-1"></div>
+                                            <a href="{{ url_for('archived_list') }}" class="{% if request.endpoint == 'archived_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Arquivados</a>
+                                        </div>
+                                    </div>
+                                    
+                                    <div x-data="{ open: false }" class="relative">
+                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['financial_report', 'full_history'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
+                                            <span>Relatórios</span><i class="fas fa-chevron-down ml-2 text-xs"></i>
+                                        </button>
+                                        <div x-show="open" x-cloak x-transition class="absolute left-0 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
+                                            <a href="{{ url_for('financial_report') }}" class="{% if request.endpoint == 'financial_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Financeiro</a>
+                                            <a href="{{ url_for('full_history') }}" class="{% if request.endpoint == 'full_history' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Histórico Completo</a>
+                                        </div>
+                                    </div>
+                                    
+                                    <div x-data="{ open: false }" class="relative">
+                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['manage_settings', 'user_list'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
+                                            <span>Configurações</span><i class="fas fa-chevron-down ml-2 text-xs"></i>
+                                        </button>
+                                        <div x-show="open" x-cloak x-transition class="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
+                                            <a href="{{ url_for('user_list') }}" class="{% if request.endpoint in ['user_list', 'create_user', 'edit_user'] %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Gerenciar Usuários</a>
+                                            <a href="{{ url_for('manage_settings') }}" class="{% if request.endpoint == 'manage_settings' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Gerais</a>
+                                        </div>
+                                    </div>
                                     {% endif %}
                                 {% endif %}
                             </div>
                         </div>
                     </div>
+
                     <div class="hidden md:block">
                         <div class="ml-4 flex items-center md:ml-6">
                             {% if current_user.is_authenticated %}
-                            <span class="text-gray-400 text-sm mr-4">Olá, {{ current_user.username }} ({{ current_user.role }})</span>
+                            <div x-data="{ open: false }" class="relative">
+                                <button @click="open = !open" class="relative rounded-full bg-gray-800 p-2 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                                    <span class="sr-only">Ver notificações</span>
+                                    <i class="fas fa-bell"></i>
+                                    {% if unread_notifications_count > 0 %}
+                                    <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white ring-2 ring-gray-800">
+                                        {{ unread_notifications_count }}
+                                    </span>
+                                    {% endif %}
+                                </button>
+                                <div x-show="open" @click.away="open = false" x-cloak x-transition
+                                     class="absolute right-0 z-10 mt-2 w-80 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                                    <div class="p-3 font-semibold text-sm text-gray-700 border-b">Notificações</div>
+                                    <div class="py-1 max-h-80 overflow-y-auto">
+                                        {% for notification in recent_notifications %}
+                                        <a href="{{ url_for('read_notification', notification_id=notification.id) }}" 
+                                           class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 {% if not notification.is_read %}bg-indigo-50{% endif %}">
+                                           <p class="{% if not notification.is_read %}font-bold{% endif %}">{{ notification.message }}</p>
+                                           <span class="block text-xs text-gray-400 mt-1">{{ notification.timestamp.strftime('%d/%m/%Y às %H:%M') }}</span>
+                                        </a>
+                                        {% else %}
+                                        <p class="px-4 py-3 text-sm text-gray-500">Nenhuma notificação recente.</p>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <span class="text-gray-400 text-sm ml-4 mr-4">Olá, {{ current_user.username }}</span>
                             <a href="{{ url_for('logout') }}" class="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700">Sair</a>
                             {% else %}
                             <a href="{{ url_for('login') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Login</a>
@@ -62,53 +124,44 @@
                             {% endif %}
                         </div>
                     </div>
+
                     <div class="-mr-2 flex md:hidden">
-                        <button type="button" id="open-menu-button" class="inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800" aria-controls="mobile-menu" aria-expanded="false">
+                        <button type="button" @click="mobileMenuOpen = !mobileMenuOpen" class="inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                             <span class="sr-only">Abrir menu principal</span>
-                            <i class="fas fa-bars text-2xl"></i>
+                            <i class="fas fa-bars text-2xl" x-show="!mobileMenuOpen"></i>
+                            <i class="fas fa-times text-2xl" x-show="mobileMenuOpen" x-cloak></i>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="md:hidden hidden" id="mobile-menu">
-                {% if current_user.is_authenticated %}
-                <div class="fixed inset-0 bg-gray-800 bg-opacity-75 z-20" id="mobile-menu-overlay"></div>
-                <div class="fixed inset-y-0 left-0 w-64 bg-gray-800 z-30 p-4">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-xl font-bold text-white">Menu</span>
-                        <button type="button" id="close-menu-button" class="p-2 text-gray-400 hover:text-white">
-                            <i class="fas fa-times text-2xl"></i>
-                        </button>
-                    </div>
-                    <div class="space-y-1">
-                        <a href="{{ url_for('dashboard') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
-                        <a href="{{ url_for('technician_tasks') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Tarefas</a>
-                        {% if current_user.role == 'admin' %}
-                        <a href="{{ url_for('client_list') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Clientes</a>
-                        <a href="{{ url_for('full_history') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Histórico Completo</a>
-                        <a href="{{ url_for('archived_list') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Arquivados</a>
-                        {% endif %}
-                    </div>
-                    <div class="absolute bottom-0 left-0 w-full border-t border-gray-700 pb-3 pt-4">
-                        <div class="flex items-center px-5">
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-user-circle text-4xl text-gray-400"></i>
-                            </div>
-                            <div class="ml-3">
-                                <div class="text-base font-medium leading-none text-white">{{ current_user.username }}</div>
-                                <div class="text-sm font-medium leading-none text-gray-400">{{ current_user.role }}</div>
-                            </div>
+            <div class="md:hidden" x-show="mobileMenuOpen" x-cloak @click.away="mobileMenuOpen = false">
+                <div class="border-t border-gray-700 pb-3 pt-4">
+                    <div class="flex items-center px-5">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user-circle text-4xl text-gray-400"></i>
                         </div>
-                        <div class="mt-3 space-y-1 px-2">
-                            <a href="{{ url_for('logout') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Sair</a>
+                        <div class="ml-3">
+                            <div class="text-base font-medium leading-none text-white">{{ current_user.username }}</div>
+                            <div class="text-sm font-medium leading-none text-gray-400">{{ current_user.role }}</div>
                         </div>
+                        <a href="#" class="relative ml-auto flex-shrink-0 rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white">
+                            <span class="sr-only">Ver notificações</span>
+                            <i class="fas fa-bell"></i>
+                            {% if unread_notifications_count > 0 %}
+                            <span class="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                                {{ unread_notifications_count }}
+                            </span>
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="mt-3 space-y-1 px-2">
+                        <a href="{{ url_for('logout') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Sair</a>
                     </div>
                 </div>
-                {% endif %}
             </div>
         </nav>
-
+        
         <header class="bg-white shadow-sm">
             <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
                 <h1 class="text-lg sm:text-xl font-bold tracking-tight text-gray-900">{% block header %}{% endblock %}</h1>
@@ -125,12 +178,12 @@
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
+                
                 {% block content %}{% endblock %}
             </div>
         </main>
     </div>
 
-    <!-- ADICIONADO: Estrutura do Modal de Confirmação -->
     <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">
@@ -149,26 +202,8 @@
         </div>
     </div>
 
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Lógica do menu mobile
-            const openMenuButton = document.getElementById('open-menu-button');
-            const closeMenuButton = document.getElementById('close-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-            const overlay = document.getElementById('mobile-menu-overlay');
-
-            const toggleMenu = () => {
-                if (mobileMenu) {
-                    mobileMenu.classList.toggle('hidden');
-                }
-            };
-
-            if (openMenuButton) openMenuButton.addEventListener('click', toggleMenu);
-            if (closeMenuButton) closeMenuButton.addEventListener('click', toggleMenu);
-            if (overlay) overlay.addEventListener('click', toggleMenu);
-
-            // ADICIONADO: Lógica do Modal de Confirmação
             const modal = document.getElementById('confirmation-modal');
             const modalTitle = document.getElementById('modal-title');
             const modalMessage = document.getElementById('modal-message');
@@ -176,22 +211,19 @@
             const confirmButton = document.getElementById('modal-confirm-button');
             let formToSubmit = null;
 
-            // Função para abrir o modal
             window.openConfirmationModal = (event, title, message) => {
-                event.preventDefault(); // Impede o envio imediato do formulário
+                event.preventDefault(); 
                 formToSubmit = event.target.closest('form');
                 modalTitle.textContent = title || 'Confirmar Ação';
                 modalMessage.textContent = message || 'Você tem certeza que deseja prosseguir? Esta ação não pode ser desfeita.';
                 modal.classList.remove('hidden');
             };
 
-            // Função para fechar o modal
             const closeModal = () => {
                 modal.classList.add('hidden');
                 formToSubmit = null;
             };
 
-            // Eventos dos botões do modal
             cancelButton.addEventListener('click', closeModal);
             confirmButton.addEventListener('click', () => {
                 if (formToSubmit) {

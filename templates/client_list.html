@@ -61,10 +61,10 @@
                             <a href="{{ url_for('edit_client', client_id=client.id) }}" class="text-indigo-600 hover:text-indigo-900" title="Editar">
                                 <i class="fas fa-pencil-alt"></i>
                             </a>
-                            <form action="{{ url_for('delete_client', client_id=client.id) }}" method="POST" class="inline" 
-                                  onsubmit="openConfirmationModal(event, 'Deletar Cliente', 'Tem certeza que deseja deletar o cliente \'{{ client.name }}\'?')">
-                                <button type="submit" class="text-red-600 hover:text-red-900" title="Deletar">
-                                    <i class="fas fa-trash-alt"></i>
+                            <form action="{{ url_for('toggle_archive_client', client_id=client.id) }}" method="POST" class="inline" 
+                                  onsubmit="openConfirmationModal(event, 'Arquivar Cliente', 'Tem certeza que deseja arquivar o cliente \'{{ client.name }}\'?')">
+                                <button type="submit" class="text-yellow-600 hover:text-yellow-900" title="Arquivar">
+                                    <i class="fas fa-archive"></i>
                                 </button>
                             </form>
                         </td>
@@ -108,9 +108,11 @@
             </div>
             <div class="mt-4 border-t border-gray-200 pt-3 flex justify-end items-center gap-4">
                 <a href="{{ url_for('edit_client', client_id=client.id) }}" class="font-medium text-indigo-600 hover:text-indigo-900">Editar</a>
-                <form action="{{ url_for('delete_client', client_id=client.id) }}" method="POST" 
-                      onsubmit="openConfirmationModal(event, 'Deletar Cliente', 'Tem certeza que deseja deletar o cliente \'{{ client.name }}\'?')">
-                    <button type="submit" class="font-medium text-red-600 hover:text-red-900">Deletar</button>
+                <form action="{{ url_for('toggle_archive_client', client_id=client.id) }}" method="POST" class="inline" 
+                      onsubmit="openConfirmationModal(event, 'Arquivar Cliente', 'Tem certeza que deseja arquivar o cliente \'{{ client.name }}\'?')">
+                    <button type="submit" class="text-yellow-600 hover:text-yellow-900" title="Arquivar">
+                        <i class="fas fa-archive"></i>
+                    </button>
                 </form>
             </div>
         </div>
