@@ -12,15 +12,15 @@ import uuid
 from werkzeug.utils import secure_filename
 from flask import send_file
 from datetime import date
-from flask import (Flask, abort, flash, redirect, render_template, request, url_for)
+from flask import (Flask, abort, flash, redirect, render_template, request, url_for, jsonify)
 from flask_login import current_user, login_required, login_user, logout_user
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, or_
 from sqlalchemy.orm import joinedload, subqueryload
 from math import ceil
 
 # Importa as extensões e os modelos dos novos arquivos
 from extensions import db, login_manager
-from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification, MaintenanceImage)
+from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification, MaintenanceImage, Lead)
 
 from dotenv import load_dotenv 
 
@@ -130,7 +130,17 @@ def register_routes(app):
     """Registra todas as rotas da aplicação."""
 
     # Em app.py, dentro de register_routes(app)
-    MAINTENANCE_CATEGORIES = ['Manutenção Preventiva', 'Manutenção Corretiva', 'Manutenção Proativa']
+    MAINTENANCE_CATEGORIES = ['Instalação','Manutenção Preventiva', 'Manutenção Corretiva', 'Manutenção Proativa']
+
+    # Em app.py, adicione esta nova rota
+
+    @app.route('/')
+    def index():
+        # Se o usuário já estiver logado, redireciona para o painel principal
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+        # Se não, exibe a página de vendas
+        return render_template('landing_page.html')
 
     def notify_admins(message, url, excluded_user_id=None):
         """Cria uma notificação para todos os administradores."""
@@ -1150,6 +1160,77 @@ def register_routes(app):
 
         # Se a notificação tiver uma URL, redireciona para ela. Senão, para o dashboard.
         return redirect(notification.url or url_for('dashboard'))
+    
+    #leads
+    @app.route('/quero-uma-demonstracao')
+    def lead_form():
+        """Exibe a página com o formulário de interesse."""
+        return render_template('lead_form.html')
+
+    @app.route('/politica-de-privacidade')
+    def privacy_policy():
+        """Exibe a página da política de privacidade."""
+        return render_template('politica-de-privacidade.html')
+
+
+    @app.route('/lead/submit', methods=['POST'])
+    def submit_lead():
+        """Recebe os dados do formulário, salva no banco e retorna um JSON."""
+        try:
+            nome = request.form.get('nome')
+            empresa = request.form.get('empresa')
+            whatsapp = request.form.get('whatsapp')
+            email = request.form.get('email')
+
+            if not all([nome, empresa, whatsapp, email]):
+                return jsonify({'status': 'error', 'message': 'Todos os campos são obrigatórios.'}), 400
+
+            # --- CORREÇÃO FINAL ---
+            # Verifica se o e-mail OU o whatsapp já existem no banco de dados
+            existing_lead = Lead.query.filter(
+                or_(Lead.email == email, Lead.whatsapp == whatsapp)
+            ).first()
+
+            if existing_lead:
+                # Se o lead já existe, retorna sucesso para não criar dados duplicados.
+                return jsonify({'status': 'success', 'message': 'Usuário já cadastrado.'})
+            # --- FIM DA CORREÇÃO ---
+
+            # Se não existir, cria um novo lead
+            new_lead = Lead(
+                nome=nome,
+                empresa=empresa,
+                whatsapp=whatsapp,
+                email=email
+            )
+            db.session.add(new_lead)
+
+            #msg = f"Novo lead recebido de '{nome}' da empresa '{empresa}'."
+            #notify_admins(msg, url_for('list_leads'))
+
+            db.session.commit()
+
+            return jsonify({'status': 'success'})
+
+        except Exception as e:
+            db.session.rollback()
+            import traceback
+            traceback.print_exc()
+            return jsonify({'status': 'error', 'message': 'Ocorreu um erro interno.'}), 500
+
+    @app.route('/leads')
+    @login_required
+    @admin_required
+    def list_leads():
+        """Exibe a lista de leads capturados para administradores."""
+        page = request.args.get('page', 1, type=int)
+        per_page = 15 # Ou o número que preferir
+
+        pagination = Lead.query.order_by(desc(Lead.created_at)).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        return render_template('leads.html', pagination=pagination)
 
 
 

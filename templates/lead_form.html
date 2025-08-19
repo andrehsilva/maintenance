@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demonstração SacadaGear</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Poppins', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="max-w-xl w-full mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden md:flex">
+        <div class="md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-indigo-700 text-white">
+            <a href="{{ url_for('index') }}" class="flex items-center space-x-3 mb-6">
+                <div class="bg-white text-indigo-600 p-2 rounded-lg shadow-sm"><i class="fas fa-rocket text-xl"></i></div>
+                <span class="text-2xl font-bold">Sacada<span class="text-indigo-200">Gear</span></span>
+            </a>
+            <h2 class="text-3xl font-bold mb-4">Quase lá!</h2>
+            <p class="mb-6 text-indigo-100">Preencha seus dados para que um de nossos especialistas entre em contato e agende uma demonstração completa da plataforma.</p>
+        </div>
+        <div class="md:w-1/2 p-8 md:p-12">
+            <form id="lead-form" class="space-y-5">
+                <div>
+                    <label for="nome" class="block text-gray-700 font-medium mb-1 text-sm">Seu nome</label>
+                    <input type="text" id="nome" name="nome" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-600" required>
+                </div>
+                <div>
+                    <label for="empresa" class="block text-gray-700 font-medium mb-1 text-sm">Nome da empresa</label>
+                    <input type="text" id="empresa" name="empresa" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-600" required>
+                </div>
+                <div>
+                    <label for="whatsapp" class="block text-gray-700 font-medium mb-1 text-sm">WhatsApp</label>
+                    <input type="tel" id="whatsapp" name="whatsapp" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-600" required>
+                </div>
+                <div>
+                    <label for="email" class="block text-gray-700 font-medium mb-1 text-sm">E-mail profissional</label>
+                    <input type="email" id="email" name="email" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-600" required>
+                </div>
+                <div>
+                    <button type="submit" id="submit-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all transform hover:scale-105">
+                        Solicitar Demonstração
+                    </button>
+                </div>
+                 <div class="flex items-start">
+                    <p class="text-xs text-gray-500">
+                        Ao enviar, você concorda com a nossa <a href="{{ url_for('privacy_policy') }}" target="_blank" class="text-indigo-600 font-semibold hover:underline">Política de Privacidade</a>.
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Sucesso -->
+    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl max-w-sm w-full mx-4 p-8 text-center shadow-2xl">
+            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-6">
+                <i class="fas fa-check text-4xl text-green-600"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-3">Obrigado!</h2>
+            <p class="text-gray-600 mb-8">Seus dados foram recebidos. Entraremos em contato em breve!</p>
+            <a href="{{ url_for('index') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg w-full transition-all inline-block">Voltar ao Início</a>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const successModal = document.getElementById('successModal');
+            const leadForm = document.getElementById('lead-form');
+
+            if (leadForm) {
+                leadForm.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    const formData = new FormData(leadForm);
+                    fetch("{{ url_for('submit_lead') }}", { method: 'POST', body: formData })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                leadForm.reset();
+                                successModal.classList.remove('hidden');
+                            } else {
+                                alert(data.message || 'Ocorreu um erro. Tente novamente.');
+                            }
+                        })
+                        .catch(error => alert('Erro de conexão. Tente novamente.'));
+                });
+            }
+        });
+    </script>
+</body>
+</html>

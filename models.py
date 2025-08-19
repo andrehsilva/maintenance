@@ -164,3 +164,22 @@ class Notification(db.Model):
 
     def __repr__(self):
         return f'<Notification {self.id} for User {self.user_id}>'
+    
+    
+    
+# Em models.py, adicione esta classe no final do arquivo
+
+class Lead(db.Model):
+    __tablename__ = 'leads'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(150), nullable=False)
+    empresa = db.Column(db.String(150), nullable=False)
+    whatsapp = db.Column(db.String(20), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    
+    # GARANTA QUE ESTA LINHA EXISTA E ESTEJA CORRETA
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Lead {self.nome} - {self.empresa}>'
