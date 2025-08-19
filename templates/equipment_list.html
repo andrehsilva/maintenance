@@ -19,6 +19,7 @@
         </div>
     </div>
 
+    <!-- Tabela (desktop) -->
     <div class="hidden md:block">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -31,7 +32,7 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {% for equipment in equipments %}
+                    {% for equipment in equipments.items %}
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
@@ -83,8 +84,9 @@
         </div>
     </div>
 
+    <!-- Cards (mobile) -->
     <div class="md:hidden p-4 space-y-4 bg-gray-50">
-        {% for equipment in equipments %}
+        {% for equipment in equipments.items %}
         <div class="bg-white rounded-lg shadow p-4">
             <div class="flex justify-between items-start">
                 <div>
@@ -121,5 +123,25 @@
         </div>
         {% endfor %}
     </div>
+
+    <!-- Paginação -->
+    {% if equipments.pages > 1 %}
+    <div class="px-4 sm:px-6 lg:px-8 pb-6">
+        <div class="flex justify-center mt-6 flex-wrap gap-2">
+            {% if equipments.has_prev %}
+                <a href="{{ url_for('equipment_list', page=equipments.prev_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">&laquo; Anterior</a>
+            {% endif %}
+            {% for p in range(1, equipments.pages + 1) %}
+                <a href="{{ url_for('equipment_list', page=p) }}"
+                   class="px-3 py-1 rounded {% if p == equipments.page %}bg-indigo-600 text-white{% else %}bg-gray-200 hover:bg-gray-300{% endif %}">
+                   {{ p }}
+                </a>
+            {% endfor %}
+            {% if equipments.has_next %}
+                <a href="{{ url_for('equipment_list', page=equipments.next_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Próximo &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

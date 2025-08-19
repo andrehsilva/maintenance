@@ -23,7 +23,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
-                        {% for equipment in equipments %}
+                        {% for equipment in equipments.items %}
                         <tr>
                             <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">{{ equipment.code }} - {{ equipment.model }}</td>
                             <td class="px-3 py-4 text-sm text-gray-500">{{ equipment.client.name }} / {{ equipment.location }}</td>
@@ -44,5 +44,23 @@
             </div>
         </div>
     </div>
+
+    <!-- Paginação -->
+    {% if equipments.pages > 1 %}
+    <div class="flex justify-center mt-6 flex-wrap gap-2">
+        {% if equipments.has_prev %}
+            <a href="{{ url_for('archived_list', page=equipments.prev_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">&laquo; Anterior</a>
+        {% endif %}
+        {% for p in range(1, equipments.pages + 1) %}
+            <a href="{{ url_for('archived_list', page=p) }}"
+               class="px-3 py-1 rounded {% if p == equipments.page %}bg-indigo-600 text-white{% else %}bg-gray-200 hover:bg-gray-300{% endif %}">
+               {{ p }}
+            </a>
+        {% endfor %}
+        {% if equipments.has_next %}
+            <a href="{{ url_for('archived_list', page=equipments.next_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Próximo &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

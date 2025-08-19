@@ -23,10 +23,11 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='technician')
-
+    is_active = db.Column(db.Boolean, default=False, nullable=False)
     equipments = db.relationship('Equipment', backref='operator', lazy=True)
     maintenance_records = db.relationship('MaintenanceHistory', backref='technician', lazy=True)
     created_tasks = db.relationship('Task', back_populates='creator', foreign_keys='Task.creator_id')
+    
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -108,9 +109,20 @@ class MaintenanceHistory(db.Model):
     
     # CORREÇÃO: Adicionado o campo de custo
     cost = db.Column(db.Numeric(10, 2), nullable=True)
+    images = db.relationship('MaintenanceImage', backref='maintenance_record', lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f'<MaintenanceHistory {self.id} for Equipment {self.equipment_id}>'
+
+class MaintenanceImage(db.Model):
+    """Modelo para armazenar as imagens de uma manutenção."""
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(100), nullable=False)
+    maintenance_history_id = db.Column(db.Integer, db.ForeignKey('maintenance_history.id'), nullable=False)
+
+    def __repr__(self):
+        return f'<MaintenanceImage {self.filename}>'
+    
 
 class Task(db.Model):
     """Modelo para a tarefa criada pelo admin."""

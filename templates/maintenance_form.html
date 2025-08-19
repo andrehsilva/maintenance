@@ -1,72 +1,98 @@
 {% extends "base.html" %}
-
 {% block title %}{{ title or 'Registrar Manutenção' }}{% endblock %}
 {% block header %}{{ title or 'Registrar Manutenção' }}{% endblock %}
 
 {% block content %}
-<div class="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
-    <div class="border-b border-gray-200 pb-5 mb-5">
-        <h3 class="text-base font-semibold leading-6 text-gray-900">Equipamento</h3>
-        <p class="mt-1 text-sm text-gray-600"><span class="font-bold">{{ equipment.code }}</span> - {{ equipment.model }}</p>
-        <p class="mt-1 text-sm text-gray-500">Local: {{ equipment.location }}</p>
-    </div>
-
-    <form method="POST" class="space-y-6">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+<div class="bg-white p-6 sm:p-8 rounded-lg shadow-md max-w-3xl mx-auto">
+    <!-- ATUALIZADO: Adicionado enctype para permitir upload de arquivos -->
+    <form method="POST" enctype="multipart/form-data">
+        <div class="space-y-6">
+            <!-- ... (campos existentes: maintenance_date, category, description, cost) ... -->
             <div>
                 <label for="maintenance_date" class="block text-sm font-medium leading-6 text-gray-900">Data da Manutenção *</label>
                 <div class="mt-2">
-                    <input type="date" name="maintenance_date" id="maintenance_date" 
-                           value="{{ (history_record.maintenance_date.strftime('%Y-%m-%d') if history_record else now.strftime('%Y-%m-%d')) }}" 
-                           required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm">
+                    <input type="date" name="maintenance_date" id="maintenance_date" value="{{ (history_record.maintenance_date if history_record else now).strftime('%Y-%m-%d') }}" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
                 </div>
             </div>
             <div>
                 <label for="category" class="block text-sm font-medium leading-6 text-gray-900">Categoria *</label>
                 <div class="mt-2">
-                    <select id="category" name="category" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm">
-                        <option value="" disabled {% if not history_record %}selected{% endif %}>Selecione uma categoria</option>
-                        {% for category in categories %}
-                            <option value="{{ category }}" {% if history_record and history_record.category == category %}selected{% endif %}>
-                                {{ category }}
-                            </option>
+                    <select id="category" name="category" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if history_record and history_record.category == cat %}selected{% endif %}>{{ cat }}</option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
-        </div>
-
-        <!-- NOVO CAMPO: Custo do Serviço -->
-        <div>
-            <label for="cost" class="block text-sm font-medium leading-6 text-gray-900">Custo do Serviço (R$)</label>
-            <div class="relative mt-2 rounded-md shadow-sm">
-                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <span class="text-gray-500 sm:text-sm">R$</span>
+            <div>
+                <label for="description" class="block text-sm font-medium leading-6 text-gray-900">Descrição Detalhada *</label>
+                <div class="mt-2">
+                    <textarea id="description" name="description" rows="5" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300" placeholder="Descreva o serviço realizado...">{{ history_record.description if history_record else '' }}</textarea>
                 </div>
-                <input type="text" name="cost" id="cost" 
-                       value="{{ '%.2f'|format(history_record.cost) if history_record and history_record.cost is not none else '' }}" 
-                       class="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" 
-                       placeholder="0.00">
             </div>
-        </div>
+            <div>
+                <label for="cost" class="block text-sm font-medium leading-6 text-gray-900">Custo (R$)</label>
+                <div class="mt-2">
+                    <input type="text" name="cost" id="cost" value="{{ history_record.cost if history_record and history_record.cost is not none else '' }}" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300" placeholder="Ex: 150.50">
+                </div>
+            </div>
 
-        <div>
-            <label for="description" class="block text-sm font-medium leading-6 text-gray-900">Descrição do Serviço Realizado *</label>
-            <div class="mt-2">
-                <textarea id="description" name="description" rows="4" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="Descreva os detalhes do serviço, peças trocadas, etc.">{{ history_record.description if history_record else '' }}</textarea>
+            <!-- NOVO: Seção de Upload de Fotos -->
+            <div>
+                <label class="block text-sm font-medium leading-6 text-gray-900">Adicionar Fotos (até 3)</label>
+                <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
+                    <div class="text-center">
+                        <i class="fas fa-camera text-4xl text-gray-300"></i>
+                        <div class="mt-4 flex text-sm leading-6 text-gray-600">
+                            <label for="photos" class="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500">
+                                <span>Selecione os arquivos</span>
+                                <input id="photos" name="photos" type="file" class="sr-only" multiple accept="image/png, image/jpeg, image/gif">
+                            </label>
+                            <p class="pl-1">ou arraste e solte</p>
+                        </div>
+                        <p class="text-xs leading-5 text-gray-600">PNG, JPG, GIF até 16MB</p>
+                    </div>
+                </div>
+                <!-- Área de pré-visualização das imagens -->
+                <div id="previews" class="mt-4 grid grid-cols-3 gap-4"></div>
             </div>
-        </div>
-        
-        <div class="text-sm text-gray-600">
-            <p>Técnico responsável: <span class="font-medium">{{ history_record.technician.username if history_record else current_user.username }}</span></p>
         </div>
 
         <div class="mt-8 flex items-center justify-end gap-x-6">
             <a href="{{ url_for('equipment_history', equipment_id=equipment.id) }}" class="text-sm font-semibold leading-6 text-gray-900">Cancelar</a>
-            <button type="submit" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
-                {% if history_record %}Atualizar Registro{% else %}Salvar Registro{% endif %}
-            </button>
+            <button type="submit" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">Salvar Registro</button>
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const photoInput = document.getElementById('photos');
+    const previewsContainer = document.getElementById('previews');
+
+    photoInput.addEventListener('change', (event) => {
+        previewsContainer.innerHTML = ''; // Limpa previews antigos
+        const files = event.target.files;
+
+        if (files.length > 3) {
+            alert('Você só pode selecionar no máximo 3 fotos.');
+            photoInput.value = ''; // Limpa a seleção
+            return;
+        }
+
+        Array.from(files).forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'relative';
+                    imgContainer.innerHTML = `<img src="${e.target.result}" class="rounded-lg object-cover h-24 w-full">`;
+                    previewsContainer.appendChild(imgContainer);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

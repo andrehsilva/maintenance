@@ -7,7 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <style>
       :root {
@@ -25,6 +26,7 @@
         <nav class="bg-gray-800" x-data="{ mobileMenuOpen: false }">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 items-center justify-between">
+                    <!-- [LADO ESQUERDO] Logo e Links -->
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                            <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('login') }}" class="flex items-center space-x-3 rtl:space-x-reverse">
@@ -36,8 +38,7 @@
                             <div class="ml-10 flex items-baseline space-x-4">
                                 {% if current_user.is_authenticated %}
                                     <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Dashboard</a>
-                                    <a href="{{ url_for('technician_tasks') }}" class="{% if request.endpoint == 'technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Tarefas</a>
-                                    
+                                     
                                     {% if current_user.role == 'admin' %}
                                     <div x-data="{ open: false }" class="relative">
                                         <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['client_list', 'new_client', 'edit_client', 'archived_clients'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
@@ -60,6 +61,8 @@
                                             <a href="{{ url_for('archived_list') }}" class="{% if request.endpoint == 'archived_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Arquivados</a>
                                         </div>
                                     </div>
+                                    <a href="{{ url_for('technician_tasks') }}" class="{% if request.endpoint == 'technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Tarefas</a>
+                                   
                                     
                                     <div x-data="{ open: false }" class="relative">
                                         <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['financial_report', 'full_history'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
@@ -86,6 +89,7 @@
                         </div>
                     </div>
 
+                    <!-- [LADO DIREITO] Notificações, Usuário e Sair -->
                     <div class="hidden md:block">
                         <div class="ml-4 flex items-center md:ml-6">
                             {% if current_user.is_authenticated %}
@@ -135,12 +139,38 @@
                 </div>
             </div>
 
+            <!-- Menu Mobile CORRIGIDO -->
             <div class="md:hidden" x-show="mobileMenuOpen" x-cloak @click.away="mobileMenuOpen = false">
+                <!-- Links de Navegação (Restaurados) -->
+                <div class="space-y-1 px-2 pb-3 pt-2 sm:px-3">
+                    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Dashboard</a>
+                    <a href="{{ url_for('technician_tasks') }}" class="{% if request.endpoint == 'technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Tarefas</a>
+                    
+                    {% if current_user.role == 'admin' %}
+                    <div class="border-t border-gray-700 my-2"></div>
+                    <h3 class="px-3 pt-2 pb-1 text-xs font-semibold uppercase text-gray-400">Clientes</h3>
+                    <a href="{{ url_for('client_list') }}" class="{% if request.endpoint in ['client_list', 'new_client', 'edit_client'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Listar Clientes</a>
+                    <a href="{{ url_for('archived_clients') }}" class="{% if request.endpoint == 'archived_clients' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Ver Arquivados</a>
+                    
+                    <div class="border-t border-gray-700 my-2"></div>
+                    <h3 class="px-3 pt-2 pb-1 text-xs font-semibold uppercase text-gray-400">Equipamentos</h3>
+                    <a href="{{ url_for('equipment_list') }}" class="{% if request.endpoint == 'equipment_list' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Listar</a>
+                    <a href="{{ url_for('new_equipment') }}" class="{% if request.endpoint == 'new_equipment' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Cadastrar</a>
+                    <a href="{{ url_for('archived_list') }}" class="{% if request.endpoint == 'archived_list' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Ver Arquivados</a>
+
+                    <div class="border-t border-gray-700 my-2"></div>
+                    <h3 class="px-3 pt-2 pb-1 text-xs font-semibold uppercase text-gray-400">Relatórios</h3>
+                    <a href="{{ url_for('financial_report') }}" class="{% if request.endpoint == 'financial_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Financeiro</a>
+                    <a href="{{ url_for('full_history') }}" class="{% if request.endpoint == 'full_history' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Histórico Completo</a>
+
+                    <div class="border-t border-gray-700 my-2"></div>
+                    <a href="{{ url_for('manage_settings') }}" class="{% if request.endpoint == 'manage_settings' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Configurações</a>
+                    {% endif %}
+                </div>
+                <!-- Seção do Usuário -->
                 <div class="border-t border-gray-700 pb-3 pt-4">
                     <div class="flex items-center px-5">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-user-circle text-4xl text-gray-400"></i>
-                        </div>
+                        <div class="flex-shrink-0"><i class="fas fa-user-circle text-4xl text-gray-400"></i></div>
                         <div class="ml-3">
                             <div class="text-base font-medium leading-none text-white">{{ current_user.username }}</div>
                             <div class="text-sm font-medium leading-none text-gray-400">{{ current_user.role }}</div>
@@ -184,6 +214,7 @@
         </main>
     </div>
 
+    <!-- Modal e Scripts -->
     <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">

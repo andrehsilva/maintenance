@@ -8,18 +8,27 @@ import click
 import io
 import re
 import qrcode
+import uuid
+from werkzeug.utils import secure_filename
 from flask import send_file
 from datetime import date
 from flask import (Flask, abort, flash, redirect, render_template, request, url_for)
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import desc, func
 from sqlalchemy.orm import joinedload, subqueryload
+from math import ceil
 
 # Importa as extensões e os modelos dos novos arquivos
 from extensions import db, login_manager
-from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification)
+from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification, MaintenanceImage)
 
+# --- Configurações de Upload ---
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # --- Função de Criação da Aplicação (App Factory) ---
 def create_app():
@@ -32,6 +41,19 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'maintenance.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['MAINTENANCE_WARNING_DAYS'] = 15  # <-- ADICIONE AQUI
+    
+    # --- INÍCIO DA CORREÇÃO ---
+    # Define a pasta de uploads na configuração do Flask
+    app.config['UPLOAD_FOLDER'] = os.path.join(basedir, UPLOAD_FOLDER)
+    # Define um tamanho máximo para os arquivos (ex: 16MB)
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
+    # GARANTE QUE A PASTA DE UPLOADS EXISTA
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    # --- FIM DA CORREÇÃO ---
+
+
+
 
     # Inicializa as extensões com a aplicação
     db.init_app(app)
@@ -185,13 +207,18 @@ def register_routes(app):
     @login_required
     def dashboard():
         status_filter = request.args.get('status')
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+
+        # Base query depende do perfil
         if current_user.role == 'admin':
             base_query = Equipment.query.filter_by(is_archived=False)
         else:
             base_query = Equipment.query.filter_by(user_id=current_user.id, is_archived=False)
-        
+
+        # Pegamos todos os equipamentos para calcular os stats
         all_user_equipments = base_query.order_by(Equipment.next_maintenance_date).all()
-        
+
         stats = {
             'total': len(all_user_equipments),
             'em_dia': len([e for e in all_user_equipments if e.status == 'Em dia']),
@@ -199,6 +226,7 @@ def register_routes(app):
             'vencido': len([e for e in all_user_equipments if e.status == 'Vencido'])
         }
 
+        # Filtro por status
         equipments_to_display = all_user_equipments
         if status_filter == 'em_dia':
             equipments_to_display = [e for e in all_user_equipments if e.status == 'Em dia']
@@ -206,10 +234,38 @@ def register_routes(app):
             equipments_to_display = [e for e in all_user_equipments if e.status == 'Próximo do vencimento']
         elif status_filter == 'vencido':
             equipments_to_display = [e for e in all_user_equipments if e.status == 'Vencido']
-        
-        return render_template('dashboard.html', equipments=equipments_to_display, stats=stats, active_filter=status_filter)
-    
-    # Em app.py, dentro da função register_routes(app)
+
+        # ---- Paginação manual (quando temos uma lista e não um query.paginate) ----
+        total_items = len(equipments_to_display)
+        total_pages = ceil(total_items / per_page)
+
+        start = (page - 1) * per_page
+        end = start + per_page
+        items = equipments_to_display[start:end]
+
+        # Criamos um objeto "fake" parecido com Pagination
+        class Pagination:
+            def __init__(self, items, page, per_page, total):
+                self.items = items
+                self.page = page
+                self.per_page = per_page
+                self.total = total
+                self.pages = ceil(total / per_page)
+                self.has_prev = page > 1
+                self.has_next = page < self.pages
+                self.prev_num = page - 1
+                self.next_num = page + 1
+
+        equipments = Pagination(items, page, per_page, total_items)
+
+        return render_template(
+            'dashboard.html',
+            equipments=equipments,
+            stats=stats,
+            active_filter=status_filter
+        )
+
+        # Em app.py, dentro da função register_routes(app)
 
     # --- ROTA DE CONFIGURAÇÕES ---
     @app.route('/settings', methods=['GET', 'POST'])
@@ -248,18 +304,29 @@ def register_routes(app):
         return render_template('settings.html', warning_days=current_days)
 
     # --- Rotas de Autenticação ---
+    # Em app.py
+
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if current_user.is_authenticated:
             return redirect(url_for('dashboard'))
         if request.method == 'POST':
             user = User.query.filter_by(username=request.form.get('username')).first()
+
             if user and user.check_password(request.form.get('password')):
+                # VERIFICAÇÃO ADICIONAL: O usuário está ativo?
+                if not user.is_active:
+                    flash('Sua conta ainda não foi aprovada por um administrador.', 'warning')
+                    return redirect(url_for('login'))
+
                 login_user(user)
                 return redirect(url_for('dashboard'))
             else:
                 flash('Usuário ou senha inválidos.', 'danger')
+
         return render_template('login.html')
+
+    # Em app.py
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
@@ -268,18 +335,57 @@ def register_routes(app):
         if request.method == 'POST':
             username = request.form.get('username')
             password = request.form.get('password')
-            with app.app_context():
-                if User.query.filter_by(username=username).first():
-                    flash('Este nome de usuário já existe.', 'warning')
-                    return redirect(url_for('register'))
-                role = 'admin' if User.query.count() == 0 else 'technician'
-            new_user = User(username=username, role=role)
+
+            if User.query.filter_by(username=username).first():
+                flash('Este nome de usuário já existe.', 'warning')
+                return redirect(url_for('register'))
+
+            # O primeiro usuário é admin E ativo. Os demais começam inativos.
+            is_first_user = User.query.count() == 0
+            role = 'admin' if is_first_user else 'technician'
+
+            new_user = User(username=username, role=role, is_active=is_first_user)
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
-            flash(f'Conta criada como {role}. Faça o login.', 'success')
+
+            if is_first_user:
+                flash('Conta de administrador criada com sucesso! Faça o login.', 'success')
+            else:
+                # Notifica os admins sobre o novo registro pendente
+                msg = f"Novo usuário '{username}' se registrou e aguarda aprovação."
+                notify_admins(msg, url_for('user_list'))
+                db.session.commit()
+                flash('Conta criada com sucesso! Aguardando aprovação do administrador.', 'info')
+
             return redirect(url_for('login'))
+
         return render_template('register.html')
+
+
+    # Em app.py, adicione esta nova rota junto com as outras de gerenciamento de usuários
+
+    @app.route('/user/approve/<int:user_id>', methods=['POST'])
+    @login_required
+    @admin_required
+    def approve_user(user_id):
+        user_to_approve = db.session.get(User, user_id)
+        if user_to_approve:
+            user_to_approve.is_active = True
+            
+            # Notifica o usuário que sua conta foi aprovada
+            msg = "Sua conta foi aprovada! Agora você já pode fazer o login no sistema."
+            user_notif = Notification(user_id=user_to_approve.id, message=msg, url=url_for('login'))
+            db.session.add(user_notif)
+            
+            db.session.commit()
+            flash(f'Usuário "{user_to_approve.username}" aprovado com sucesso.', 'success')
+        else:
+            flash('Usuário não encontrado.', 'danger')
+            
+        return redirect(url_for('user_list'))
+
+
 
     @app.route('/logout')
     @login_required
@@ -289,14 +395,22 @@ def register_routes(app):
         return redirect(url_for('login'))
 
     # --- Rotas de Gerenciamento de Equipamentos ---
-    # --- Rotas de Gerenciamento de Equipamentos ---
+    # Lista de equipamentos ativos
     @app.route('/equipments')
     @login_required
-    @admin_required
     def equipment_list():
-        """Exibe uma lista de todos os equipamentos não arquivados."""
-        equipments = Equipment.query.filter_by(is_archived=False).order_by(Equipment.code).all()
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+
+        if current_user.role == 'admin':
+            q = Equipment.query.filter_by(is_archived=False).order_by(Equipment.next_maintenance_date.asc())
+        else:
+            q = Equipment.query.filter_by(user_id=current_user.id, is_archived=False).order_by(Equipment.next_maintenance_date.asc())
+
+        equipments = q.paginate(page=page, per_page=per_page, error_out=False)
+
         return render_template('equipment_list.html', equipments=equipments)
+
 
 
     @app.route('/equipment/new', methods=['GET', 'POST'])
@@ -426,12 +540,21 @@ def register_routes(app):
         # (Funciona para a lista de arquivados e para a nova lista de equipamentos)
         return redirect(request.referrer or url_for('dashboard'))
 
-    @app.route('/archived')
+    # Lista de equipamentos arquivados
+    @app.route('/equipments/archived')
     @login_required
-    @admin_required
     def archived_list():
-        archived_equipments = Equipment.query.filter_by(is_archived=True).order_by(Equipment.code).all()
-        return render_template('archived_list.html', equipments=archived_equipments)
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+    
+        if current_user.role == 'admin':
+            q = Equipment.query.filter_by(is_archived=True).order_by(Equipment.next_maintenance_date.asc())
+        else:
+            q = Equipment.query.filter_by(user_id=current_user.id, is_archived=True).order_by(Equipment.next_maintenance_date.asc())
+    
+        equipments = q.paginate(page=page, per_page=per_page, error_out=False)
+    
+        return render_template('archived_list.html', equipments=equipments)
 
     # --- Rotas de Histórico de Manutenção ---
     @app.route('/equipment/<int:equipment_id>/history')
@@ -447,6 +570,14 @@ def register_routes(app):
 
     # Em app.py
 
+    # --- NOVA ROTA PARA SERVIR IMAGENS ---
+    @app.route('/uploads/<filename>')
+    @login_required
+    def uploaded_file(filename):
+        return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    
+
+    # Função reescrita:
     @app.route('/history/new/<int:equipment_id>', methods=['GET', 'POST'])
     @login_required
     def new_maintenance_history(equipment_id):
@@ -458,6 +589,7 @@ def register_routes(app):
             
         if request.method == 'POST':
             try:
+                # --- Cria o registro de manutenção primeiro ---
                 maintenance_date = datetime.strptime(request.form.get('maintenance_date'), '%Y-%m-%d').date()
                 cost_str = request.form.get('cost')
                 cost = float(cost_str.replace(',', '.')) if cost_str else None
@@ -470,35 +602,57 @@ def register_routes(app):
                     technician_id=current_user.id,
                     cost=cost
                 )
-                equipment.last_maintenance_date = maintenance_date
                 db.session.add(history_entry)
-                db.session.commit() # Salva a manutenção primeiro
+                # Usamos flush para obter o ID do history_entry antes do commit final
+                db.session.flush()
     
-                # --- INÍCIO DA LÓGICA DE NOTIFICAÇÃO CORRIGIDA ---
-                # 1. Notificar todos os administradores
+                # --- INÍCIO DA LÓGICA DE UPLOAD DE IMAGENS ---
+                photos = request.files.getlist('photos')
+                if len(photos) > 3:
+                    flash('Você pode enviar no máximo 3 fotos.', 'danger')
+                    # Damos rollback para não salvar o registro de manutenção se as fotos falharem
+                    db.session.rollback()
+                    return redirect(request.url)
+    
+                for photo in photos:
+                    # Verifica se um arquivo foi realmente enviado e se a extensão é permitida
+                    if photo and allowed_file(photo.filename):
+                        ext = photo.filename.rsplit('.', 1)[1].lower()
+                        # Cria um nome de arquivo único para evitar sobrescrever arquivos
+                        filename = secure_filename(f"{uuid.uuid4()}.{ext}")
+                        photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        
+                        # Cria o registro da imagem no banco de dados
+                        new_image = MaintenanceImage(filename=filename, maintenance_history_id=history_entry.id)
+                        db.session.add(new_image)
+                # --- FIM DA LÓGICA DE UPLOAD ---
+    
+                # Atualiza a data da última manutenção no equipamento
+                equipment.last_maintenance_date = maintenance_date
+                
+                # --- LÓGICA DE NOTIFICAÇÃO ---
                 admin_msg = f"Nova manutenção em '{equipment.code}' registrada por {current_user.username}."
                 notify_admins(admin_msg, url_for('equipment_history', equipment_id=equipment.id), excluded_user_id=current_user.id)
                 
-                # 2. Notificar o técnico responsável pelo equipamento (se não for ele mesmo)
                 if equipment.user_id != current_user.id:
                     tech_msg = f"Uma nova manutenção foi registrada no equipamento '{equipment.code}'."
                     tech_notif = Notification(user_id=equipment.user_id, message=tech_msg, url=url_for('equipment_history', equipment_id=equipment.id))
                     db.session.add(tech_notif)
                 
-                db.session.commit() # Salva as notificações
-                # --- FIM DA LÓGICA DE NOTIFICAÇÃO ---
-    
+                # Agora faz o commit de tudo (manutenção, imagens e notificações)
+                db.session.commit()
+                
                 flash('Registro de manutenção adicionado com sucesso!', 'success')
                 return redirect(url_for('equipment_history', equipment_id=equipment_id))
                 
             except (ValueError, TypeError):
+                db.session.rollback()
                 flash('Valor de custo inválido. Use um formato como 150.50.', 'danger')
             except Exception as e:
                 db.session.rollback()
                 flash(f'Erro ao adicionar registro: {e}', 'danger')
                 
         return render_template('maintenance_form.html', equipment=equipment, categories=MAINTENANCE_CATEGORIES, now=datetime.utcnow())
-
 
 
 
@@ -538,6 +692,8 @@ def register_routes(app):
                 flash(f'Erro ao atualizar registro: {e}', 'danger')
         return render_template('maintenance_form.html', title="Editar Manutenção", equipment=history_record.equipment, categories=MAINTENANCE_CATEGORIES, history_record=history_record)
 
+    # Em app.py
+
     @app.route('/history/delete/<int:history_id>', methods=['POST'])
     @login_required
     def delete_maintenance(history_id):
@@ -546,28 +702,46 @@ def register_routes(app):
             abort(404)
         if current_user.role != 'admin' and history_record.technician_id != current_user.id:
             abort(403)
-        equipment_id = history_record.equipment_id
+    
         try:
+            # --- INÍCIO DA CORREÇÃO ---
+            # 1. Pegue todas as informações ANTES de deletar
+            equipment_id = history_record.equipment_id
+            equipment_code = history_record.equipment.code
+            technician_id = history_record.equipment.user_id
+            image_filenames = [image.filename for image in history_record.images]
+            # --- FIM DA CORREÇÃO ---
+    
+            # 2. Delete os arquivos físicos das imagens da pasta 'uploads'
+            for filename in image_filenames:
+                try:
+                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                except OSError:
+                    # Ignora o erro se o arquivo não for encontrado
+                    pass
+                
+            # 3. Delete o registro do banco de dados (o cascade deleta as referências das imagens)
             db.session.delete(history_record)
             db.session.commit()
-            admin_msg = f"O registro de manutenção do equipamento '{history_record.equipment.code}' foi deletado por {current_user.username}."
-            admins = User.query.filter_by(role='admin').all()
-            for admin in admins:
-                if admin.id != current_user.id:
-                    notif = Notification(user_id=admin.id, message=admin_msg, url=url_for('equipment_history', equipment_id=history_record.equipment.id))
-                    db.session.add(notif)
-            if history_record.equipment.user_id != current_user.id:
-                tech_msg = f"Um registro de manutenção do equipamento '{history_record.equipment.code}' foi deletado."
-                notif_technician = Notification(user_id=history_record.equipment.user_id, message=tech_msg, url=url_for('equipment_history', equipment_id=history_record.equipment.id))
+    
+            # 4. Crie as notificações usando as informações salvas
+            admin_msg = f"Um registro de manutenção do equipamento '{equipment_code}' foi deletado por {current_user.username}."
+            notify_admins(admin_msg, url_for('equipment_history', equipment_id=equipment_id), excluded_user_id=current_user.id)
+            
+            if technician_id != current_user.id:
+                tech_msg = f"Um registro de manutenção do equipamento '{equipment_code}' foi deletado."
+                notif_technician = Notification(user_id=technician_id, message=tech_msg, url=url_for('equipment_history', equipment_id=equipment_id))
                 db.session.add(notif_technician)
+            
             db.session.commit()
             flash('Registro de manutenção deletado com sucesso.', 'success')
+    
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao deletar registro: {e}', 'danger')
+            
         return redirect(url_for('equipment_history', equipment_id=equipment_id))
-
-
+    
     @app.route('/history/all')
     @login_required
     @admin_required
