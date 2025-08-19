@@ -22,6 +22,11 @@ from math import ceil
 from extensions import db, login_manager
 from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification, MaintenanceImage)
 
+from dotenv import load_dotenv 
+
+# --- Carrega as variáveis do arquivo .env para o ambiente ---
+load_dotenv()
+
 # --- Configurações de Upload ---
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -36,7 +41,7 @@ def create_app():
     app = Flask(__name__)
     
     # Configurações da Aplicação
-    app.config['SECRET_KEY'] = 'D8C73C7FF3F7D86734D7E319EFB5C'
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
     basedir = os.path.abspath(os.path.dirname(__file__))
     database_url = os.environ.get('DATABASE_URL')
     if database_url:
