@@ -36,45 +36,57 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # --- Função de Criação da Aplicação (App Factory) ---
+# app.py
+
+# ... (suas importações: os, Flask, SQLAlchemy, etc.)
+# Lembre-se de ter estas duas linhas no topo do seu arquivo, antes de tudo:
+# from dotenv import load_dotenv
+# load_dotenv()
+
 def create_app():
-    """Cria e configura a instância da aplicação Flask."""
+    """
+    Cria e configura uma instância da aplicação Flask (Padrão App Factory).
+    """
     app = Flask(__name__)
-    
-    # Configurações da Aplicação
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-    basedir = os.path.abspath(os.path.dirname(__file__))
+
+    # --- 1. CONFIGURAÇÃO DE SEGREDOS ---
+    # Carrega a chave secreta a partir das variáveis de ambiente.
+    # É mais seguro e flexível para produção e desenvolvimento.
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'chave-padrao-apenas-para-desenvolvimento')
+
+    # --- 2. CONFIGURAÇÃO DO BANCO DE DADOS ---
+    # Prioriza a variável de ambiente DATABASE_URL (usada no Easypanel/produção).
     database_url = os.environ.get('DATABASE_URL')
+    
     if database_url:
+        # Se a variável existe, usa o banco de produção (PostgreSQL).
+        # Corrige o dialeto para compatibilidade com SQLAlchemy.
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace("postgres://", "postgresql://", 1)
     else:
+        # Se não, usa um banco de dados SQLite local com um caminho absoluto e seguro.
+        # Isso evita erros dependendo de onde o comando 'flask' é executado.
         basedir = os.path.abspath(os.path.dirname(__file__))
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'maintenance.db')
 
-
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['MAINTENANCE_WARNING_DAYS'] = 15  # <-- ADICIONE AQUI
+    # Linha de debug: mostra no terminal qual banco de dados está sendo usado.
+    print(f"--- INFO: Conectando ao banco de dados em: {app.config['SQLALCHEMY_DATABASE_URI']} ---")
     
-    # --- INÍCIO DA CORREÇÃO ---
-    # Define a pasta de uploads na configuração do Flask
+    # Otimização recomendada para o SQLAlchemy.
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # Configuração da pasta de uploads.
+    UPLOAD_FOLDER = 'uploads'
+    basedir = os.path.abspath(os.path.dirname(__file__))
     app.config['UPLOAD_FOLDER'] = os.path.join(basedir, UPLOAD_FOLDER)
-    # Define um tamanho máximo para os arquivos (ex: 16MB)
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-
-    # GARANTE QUE A PASTA DE UPLOADS EXISTA
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    # --- FIM DA CORREÇÃO ---
 
-
-
-
-    # Inicializa as extensões com a aplicação
+    # --- 3. INICIALIZAÇÃO DAS EXTENSÕES ---
+    # Associa as extensões (db, login_manager) com a instância 'app'.
     db.init_app(app)
     login_manager.init_app(app)
-    
-    # Configura o Flask-Login
     login_manager.login_view = 'login'
-    login_manager.login_message = 'Por favor, faça o login para acessar esta página.'
-    login_manager.login_message_category = 'info'
+    login_manager.login_message = "Por favor, faça o login para acessar esta página."
+
 
     @app.context_processor
     def inject_notifications():
@@ -86,6 +98,22 @@ def create_app():
                 recent_notifications=recent_notifications
             )
         return dict(unread_notifications_count=0, recent_notifications=[])
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    # --- 4. REGISTRO DE ROTAS E COMANDOS ---
+    # Mantém seu código organizado chamando as funções que registram tudo.
+    register_routes(app)
+    register_commands(app)
+    
+    # --- 5. RETORNA A APLICAÇÃO PRONTA ---
+    return app
+
+
+
+    
 
     @login_manager.user_loader
     def load_user(user_id):
