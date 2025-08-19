@@ -14,7 +14,8 @@ RUN pip install uv
 # Copiamos apenas o requirements.txt primeiro para otimizar o cache.
 # Se este arquivo não mudar, o Docker não reinstala tudo de novo.
 COPY requirements.txt .
-RUN uv pip install --no-cache-dir -r requirements.txt
+# Linha correta
+RUN uv pip install --system --no-cache-dir -r requirements.txt
 
 # Etapa 5: Copiar o Código da Aplicação
 # Copia todos os outros arquivos (app.py, etc.) para dentro do container.
