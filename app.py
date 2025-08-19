@@ -38,7 +38,14 @@ def create_app():
     # Configurações da Aplicação
     app.config['SECRET_KEY'] = 'uma-chave-secreta-muito-segura-e-dificil-de-adivinhar'
     basedir = os.path.abspath(os.path.dirname(__file__))
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'maintenance.db')
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace("postgres://", "postgresql://", 1)
+    else:
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'maintenance.db')
+
+
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['MAINTENANCE_WARNING_DAYS'] = 15  # <-- ADICIONE AQUI
     
@@ -546,14 +553,14 @@ def register_routes(app):
     def archived_list():
         page = request.args.get('page', 1, type=int)
         per_page = 10
-    
+
         if current_user.role == 'admin':
             q = Equipment.query.filter_by(is_archived=True).order_by(Equipment.next_maintenance_date.asc())
         else:
             q = Equipment.query.filter_by(user_id=current_user.id, is_archived=True).order_by(Equipment.next_maintenance_date.asc())
-    
+
         equipments = q.paginate(page=page, per_page=per_page, error_out=False)
-    
+
         return render_template('archived_list.html', equipments=equipments)
 
     # --- Rotas de Histórico de Manutenção ---
