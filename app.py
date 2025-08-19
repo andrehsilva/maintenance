@@ -36,7 +36,7 @@ def create_app():
     app = Flask(__name__)
     
     # Configurações da Aplicação
-    app.config['SECRET_KEY'] = 'uma-chave-secreta-muito-segura-e-dificil-de-adivinhar'
+    app.config['SECRET_KEY'] = 'D8C73C7FF3F7D86734D7E319EFB5C'
     basedir = os.path.abspath(os.path.dirname(__file__))
     database_url = os.environ.get('DATABASE_URL')
     if database_url:
