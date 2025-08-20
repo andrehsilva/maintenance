@@ -1,6 +1,6 @@
 # models.py
 from flask import g
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date # CORREÇÃO: 'date' foi adicionado aqui
 from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,6 +8,8 @@ from sqlalchemy import desc
 from flask import url_for
 # Importa a instância 'db' do arquivo de extensões
 from extensions import db
+
+
 
 class Setting(db.Model):
     """Modelo para armazenar configurações gerais da aplicação."""
@@ -183,3 +185,48 @@ class Lead(db.Model):
 
     def __repr__(self):
         return f'<Lead {self.nome} - {self.empresa}>'
+    
+
+
+class Expense(db.Model):
+    """Modelo para armazenar as despesas diárias dos técnicos."""
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    category = db.Column(db.String(50), nullable=False)
+    value = db.Column(db.Numeric(10, 2), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    # Relacionamento para acessar o usuário (técnico) facilmente
+    technician = db.relationship('User', backref=db.backref('expenses', lazy=True))
+
+    def __repr__(self):
+        return f'<Expense {self.id} by User {self.user_id}>'
+    
+class TimeClock(db.Model):
+    """Modelo para armazenar os registros de ponto dos técnicos."""
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False, default=date.today)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    morning_check_in = db.Column(db.DateTime, nullable=True)
+    morning_check_out = db.Column(db.DateTime, nullable=True)
+    afternoon_check_in = db.Column(db.DateTime, nullable=True)
+    afternoon_check_out = db.Column(db.DateTime, nullable=True)
+
+    technician = db.relationship('User', backref=db.backref('time_clocks', lazy=True))
+
+    @property
+    def total_hours(self):
+        """Calcula o total de horas trabalhadas no dia."""
+        total_seconds = 0
+        if self.morning_check_in and self.morning_check_out:
+            total_seconds += (self.morning_check_out - self.morning_check_in).total_seconds()
+        if self.afternoon_check_in and self.afternoon_check_out:
+            total_seconds += (self.afternoon_check_out - self.afternoon_check_in).total_seconds()
+        
+        hours = total_seconds / 3600
+        return f"{hours:.2f}".replace('.', ',') if hours > 0 else "0,00"
+
+    def __repr__(self):
+        return f'<TimeClock {self.id} for User {self.user_id} on {self.date}>'

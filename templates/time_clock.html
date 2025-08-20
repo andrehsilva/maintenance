@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Controle de Ponto{% endblock %}
+{% block header %}Controle de Ponto{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+        <div class="text-center border-b border-gray-200 pb-4 mb-6">
+            <h2 class="text-xl font-bold text-gray-800">Registro de Ponto</h2>
+            <p class="text-gray-600">Hoje, {{ today.strftime('%d de %B de %Y') }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="flex flex-col">
+                <h3 class="text-lg font-semibold text-gray-700 text-center mb-4">Período da Manhã</h3>
+                <div class="space-y-3">
+                    <form action="{{ url_for('register_time_clock') }}" method="POST">
+                        <input type="hidden" name="action" value="morning_in">
+                        <button type="submit" 
+                                class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-md transition-colors duration-200 border"
+                                {% if record and record.morning_check_in %}
+                                    disabled
+                                    class="bg-green-50 border-green-200 text-green-800 cursor-not-allowed"
+                                {% else %}
+                                    class="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                                {% endif %}>
+                            <span class="flex items-center"><i class="fas fa-sign-in-alt mr-2"></i> Registrar Entrada</span>
+                            {% if record and record.morning_check_in %}
+                                <span class="font-bold text-base">{{ record.morning_check_in.strftime('%H:%M') }}</span>
+                            {% endif %}
+                        </button>
+                    </form>
+                    <form action="{{ url_for('register_time_clock') }}" method="POST">
+                        <input type="hidden" name="action" value="morning_out">
+                        <button type="submit" 
+                                class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-md transition-colors duration-200 border"
+                                {% if not record or not record.morning_check_in or record.morning_check_out %}disabled{% endif %}
+                                {% if record and record.morning_check_out %}
+                                    class="bg-orange-50 border-orange-200 text-orange-800 cursor-not-allowed"
+                                {% else %}
+                                    class="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                {% endif %}>
+                            <span class="flex items-center"><i class="fas fa-sign-out-alt mr-2"></i> Registrar Saída</span>
+                            {% if record and record.morning_check_out %}
+                                <span class="font-bold text-base">{{ record.morning_check_out.strftime('%H:%M') }}</span>
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="flex flex-col">
+                <h3 class="text-lg font-semibold text-gray-700 text-center mb-4">Período da Tarde</h3>
+                <div class="space-y-3">
+                    <form action="{{ url_for('register_time_clock') }}" method="POST">
+                        <input type="hidden" name="action" value="afternoon_in">
+                        <button type="submit" 
+                                class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-md transition-colors duration-200 border"
+                                {% if not record or not record.morning_check_out or record.afternoon_check_in %}disabled{% endif %}
+                                {% if record and record.afternoon_check_in %}
+                                    class="bg-green-50 border-green-200 text-green-800 cursor-not-allowed"
+                                {% else %}
+                                    class="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                {% endif %}>
+                            <span class="flex items-center"><i class="fas fa-sign-in-alt mr-2"></i> Registrar Entrada</span>
+                            {% if record and record.afternoon_check_in %}
+                                <span class="font-bold text-base">{{ record.afternoon_check_in.strftime('%H:%M') }}</span>
+                            {% endif %}
+                        </button>
+                    </form>
+                    <form action="{{ url_for('register_time_clock') }}" method="POST">
+                        <input type="hidden" name="action" value="afternoon_out">
+                        <button type="submit" 
+                                class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-md transition-colors duration-200 border"
+                                {% if not record or not record.afternoon_check_in or record.afternoon_check_out %}disabled{% endif %}
+                                {% if record and record.afternoon_check_out %}
+                                    class="bg-orange-50 border-orange-200 text-orange-800 cursor-not-allowed"
+                                {% else %}
+                                    class="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                {% endif %}>
+                            <span class="flex items-center"><i class="fas fa-sign-out-alt mr-2"></i> Registrar Saída</span>
+                            {% if record and record.afternoon_check_out %}
+                                <span class="font-bold text-base">{{ record.afternoon_check_out.strftime('%H:%M') }}</span>
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

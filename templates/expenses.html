@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Minhas despesas{% endblock %}
+{% block header %}Minhas despesas{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Seção de Filtros e Resumos -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Filtro de Data -->
+        <div class="lg:col-span-2 bg-white p-4 rounded-lg shadow-md">
+            <form method="GET" action="{{ url_for('manage_expenses') }}" class="flex flex-col sm:flex-row items-center gap-2">
+                <label for="date-filter" class="flex-shrink-0 text-sm font-medium text-gray-700">Exibir despesas do dia:</label>
+                <input type="date" name="date" id="date-filter" value="{{ selected_date.strftime('%Y-%m-%d') }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                <button type="submit" class="w-full sm:w-auto justify-center inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Filtrar</button>
+            </form>
+            <div class="mt-2 flex justify-between items-center">
+                <!-- CORREÇÃO: Usa a variável 'previous_day' vinda do app.py -->
+                <a href="{{ url_for('manage_expenses', date=previous_day.strftime('%Y-%m-%d')) }}" class="text-sm text-indigo-600 hover:underline">&larr; Dia anterior</a>
+                <span class="text-sm font-semibold text-gray-600">{{ selected_date.strftime('%d de %B de %Y') }}</span>
+                <!-- CORREÇÃO: Usa a variável 'next_day' vinda do app.py -->
+                <a href="{{ url_for('manage_expenses', date=next_day.strftime('%Y-%m-%d')) }}" class="text-sm text-indigo-600 hover:underline">Próximo dia &rarr;</a>
+            </div>
+        </div>
+        <!-- Resumo Semanal -->
+        <div class="lg:col-span-1 bg-white p-4 rounded-lg shadow-md flex flex-col justify-center">
+            <dt class="truncate text-sm font-medium text-gray-500">Total da semana</dt>
+            <dd class="mt-1 text-2xl font-semibold tracking-tight text-green-600">R$ {{ "%.2f"|format(weekly_total) }}</dd>
+            <p class="text-xs text-gray-400 mt-1">{{ start_of_week.strftime('%d/%m') }} a {{ end_of_week.strftime('%d/%m') }}</p>
+        </div>
+    </div>
+
+    <!-- Seção de Registro e Lista -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Coluna do Formulário -->
+        <div class="lg:col-span-1">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-3">Adicionar despesa</h2>
+                <form method="POST" action="{{ url_for('manage_expenses') }}" class="mt-4 space-y-4">
+                    <input type="hidden" name="date" value="{{ selected_date.strftime('%Y-%m-%d') }}">
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700">Categoria</label>
+                        <select id="category" name="category" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                            <option value="" disabled selected>Selecione...</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="value" class="block text-sm font-medium text-gray-700">Valor (R$)</label>
+                        <div class="relative mt-1">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <span class="text-gray-500 sm:text-sm">R$</span>
+                            </div>
+                            <input type="text" name="value" id="value" required class="block w-full rounded-md border-gray-300 pl-10 shadow-sm sm:text-sm" placeholder="0,00">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Descrição (Opcional)</label>
+                        <textarea name="description" id="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm" placeholder="Ex: Almoço no cliente X..."></textarea>
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full justify-center inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                            <i class="fas fa-plus mr-2"></i>Registrar despesa
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Coluna da Lista de Despesas -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="p-6 border-b">
+                    <h2 class="text-lg font-semibold text-gray-800">Despesas de {{ selected_date.strftime('%d/%m/%Y') }}</h2>
+                </div>
+                <ul class="divide-y divide-gray-200">
+                    {% for expense in daily_expenses %}
+                    <li class="p-4 flex justify-between items-center hover:bg-gray-50">
+                        <div>
+                            <p class="font-medium text-gray-900">{{ expense.category }}</p>
+                            <p class="text-sm text-gray-500">{{ expense.description or 'Sem descrição' }}</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="font-semibold text-gray-800">R$ {{ "%.2f"|format(expense.value) }}</span>
+                            <form action="{{ url_for('delete_expense', expense_id=expense.id) }}" method="POST" onsubmit="openConfirmationModal(event, 'Remover Despesa', 'Tem certeza que deseja remover este lançamento?');">
+                                 <button type="submit" class="text-gray-400 hover:text-red-600" title="Remover"><i class="fas fa-trash-alt"></i></button>
+                            </form>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="p-6 text-center text-sm text-gray-500">
+                        Nenhuma despesa registrada para este dia.
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

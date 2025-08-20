@@ -26,9 +26,15 @@
                 <p class="mt-2 text-sm text-gray-700">Relatório com todos os registros de manutenção, agrupados por equipamento.</p>
             </div>
             <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+              
                 <button onclick="window.print()" type="button" class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
                     <i class="fas fa-print mr-2"></i>Imprimir / Salvar em PDF
                 </button>
+            </div><div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+                <a href="{{ url_for('export_maintenance') }}" class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-green-700">
+                    <i class="fas fa-file-excel mr-2"></i>Download Excel
+                </a>
+                
             </div>
         </div>
     </div>

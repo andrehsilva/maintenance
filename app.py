@@ -1,9 +1,10 @@
 # app.py
 import os
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from functools import wraps
-
+import pandas as pd
 import click
+import openpyxl
 
 import io
 import re
@@ -11,7 +12,6 @@ import qrcode
 import uuid
 from werkzeug.utils import secure_filename
 from flask import send_file
-from datetime import date
 from flask import (Flask, abort, flash, redirect, render_template, request, url_for, jsonify)
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import desc, func, or_
@@ -20,7 +20,7 @@ from math import ceil
 
 # Importa as extensões e os modelos dos novos arquivos
 from extensions import db, login_manager
-from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification, MaintenanceImage, Lead)
+from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification, MaintenanceImage, Lead, Expense, TimeClock)
 
 from dotenv import load_dotenv 
 
@@ -1231,6 +1231,351 @@ def register_routes(app):
         )
         
         return render_template('leads.html', pagination=pagination)
+    
+    # --- NOVAS ROTAS PARA GERENCIAMENTO DE DESPESAS ---
+
+    @app.route('/expenses', methods=['GET', 'POST'])
+    @login_required
+    def manage_expenses():
+        selected_date_str = request.args.get('date')
+        try:
+            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date() if selected_date_str else date.today()
+        except ValueError:
+            selected_date = date.today()
+
+        # --- Lógica de Registro (POST) ---
+        if request.method == 'POST':
+            try:
+                expense_date_str = request.form.get('date')
+                expense_date = datetime.strptime(expense_date_str, '%Y-%m-%d').date()
+                category = request.form.get('category')
+                value_str = request.form.get('value')
+                description = request.form.get('description')
+
+                if not category or not value_str:
+                    flash('Categoria e Valor são campos obrigatórios.', 'danger')
+                    return redirect(url_for('manage_expenses', date=expense_date_str))
+
+                value = float(value_str.replace(',', '.'))
+
+                new_expense = Expense(
+                    date=expense_date, category=category, value=value,
+                    description=description, user_id=current_user.id
+                )
+                db.session.add(new_expense)
+                db.session.commit()
+                flash('Despesa registrada com sucesso!', 'success')
+                return redirect(url_for('manage_expenses', date=expense_date_str))
+
+            except (ValueError, TypeError):
+                flash('O valor informado é inválido. Use um formato como 50.75.', 'danger')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erro ao registrar despesa: {e}', 'danger')
+
+            return redirect(url_for('manage_expenses', date=selected_date.strftime('%Y-%m-%d')))
+
+        # --- Lógica de Exibição (GET) ---
+
+        # CORREÇÃO: Calcula as datas de navegação aqui
+        previous_day = selected_date - timedelta(days=1)
+        next_day = selected_date + timedelta(days=1)
+
+        start_of_week = selected_date - timedelta(days=(selected_date.weekday() + 1) % 7)
+        end_of_week = start_of_week + timedelta(days=6)
+
+        daily_expenses = Expense.query.filter_by(user_id=current_user.id, date=selected_date).order_by(Expense.id.desc()).all()
+
+        weekly_total_query = db.session.query(func.sum(Expense.value)).filter(
+            Expense.user_id == current_user.id,
+            Expense.date >= start_of_week,
+            Expense.date <= end_of_week
+        ).scalar()
+        weekly_total = weekly_total_query or 0.0
+
+        expense_categories = ['Alimentação', 'Combustível ', 'Pedágio', 'Lanche', 'Gastos Diversos']
+
+        return render_template('expenses.html', 
+                               daily_expenses=daily_expenses, 
+                               categories=expense_categories,
+                               selected_date=selected_date,
+                               weekly_total=weekly_total,
+                               start_of_week=start_of_week,
+                               end_of_week=end_of_week,
+                               previous_day=previous_day, # Passa a data para o template
+                               next_day=next_day)         # Passa a data para o template
+
+
+    @app.route('/expenses/delete/<int:expense_id>', methods=['POST'])
+    @login_required
+    def delete_expense(expense_id):
+        """Permite que um usuário delete sua própria despesa."""
+        expense = db.session.get(Expense, expense_id)
+        if not expense:
+            abort(404)
+        
+        # Garante que o usuário só pode deletar suas próprias despesas (a menos que seja admin)
+        if expense.user_id != current_user.id and current_user.role != 'admin':
+            abort(403)
+        
+        try:
+            db.session.delete(expense)
+            db.session.commit()
+            flash('Despesa removida com sucesso.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao remover despesa: {e}', 'danger')
+
+        # Redireciona de volta para a página de onde veio (seja a do técnico ou a do admin)
+        return redirect(request.referrer or url_for('manage_expenses'))
+
+
+    @app.route('/reports/expenses')
+    @login_required
+    @admin_required
+    def expense_report():
+        """Página para o admin visualizar e filtrar todas as despesas."""
+        technicians = User.query.filter_by(role='technician').order_by(User.username).all()
+        expense_categories = ['Alimentação', 'Gasolina', 'Pedágio', 'Lanche', 'Gastos Diversos']
+        
+        # Pega os filtros da URL
+        tech_id = request.args.get('technician_id', type=int)
+        category = request.args.get('category') # NOVO FILTRO
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+
+        # Query base
+        query = Expense.query
+        
+        # Aplica filtros
+        if tech_id:
+            query = query.filter(Expense.user_id == tech_id)
+        if category: # NOVO FILTRO
+            query = query.filter(Expense.category == category)
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            query = query.filter(Expense.date >= start_date)
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            query = query.filter(Expense.date <= end_date)
+            
+        # Executa a query para obter os registros
+        records = query.order_by(desc(Expense.date), Expense.user_id).all()
+        
+        # Calcula o total
+        total_value = sum(record.value for record in records if record.value is not None)
+
+        return render_template('expense_report.html', 
+                               technicians=technicians, 
+                               records=records,
+                               total_value=total_value,
+                               categories=expense_categories, # Passa a lista de categorias
+                               filters=request.args)
+
+    @app.route('/export/expenses')
+    @login_required
+    @admin_required
+    def export_expenses():
+        """Gera um arquivo Excel com o relatório de despesas filtrado."""
+        try:
+            # Pega os filtros da URL (mesma lógica do relatório visual)
+            tech_id = request.args.get('technician_id', type=int)
+            category = request.args.get('category')
+            start_date_str = request.args.get('start_date')
+            end_date_str = request.args.get('end_date')
+
+            # Query base
+            query = Expense.query.options(joinedload(Expense.technician))
+            
+            # Aplica filtros
+            if tech_id:
+                query = query.filter(Expense.user_id == tech_id)
+            if category:
+                query = query.filter(Expense.category == category)
+            if start_date_str:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                query = query.filter(Expense.date >= start_date)
+            if end_date_str:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                query = query.filter(Expense.date <= end_date)
+            
+            records = query.order_by(desc(Expense.date), Expense.user_id).all()
+
+            # Prepara os dados para o DataFrame
+            data_for_df = [{
+                'Data': record.date.strftime('%d/%m/%Y'),
+                'Técnico': record.technician.username,
+                'Categoria': record.category,
+                'Descrição': record.description,
+                'Valor (R$)': float(record.value)
+            } for record in records]
+
+            # Cria o DataFrame com pandas
+            df = pd.DataFrame(data_for_df)
+
+            # Cria o arquivo Excel em memória
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='Despesas')
+            output.seek(0)
+            
+            timestamp = datetime.now().strftime("%Y-%m-%d")
+            return send_file(
+                output,
+                as_attachment=True,
+                download_name=f'relatorio_despesas_{timestamp}.xlsx',
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        except Exception as e:
+            flash(f"Erro ao gerar o relatório Excel: {e}", "danger")
+            return redirect(url_for('expense_report'))
+
+
+    @app.route('/export/maintenance')
+    @login_required
+    @admin_required
+    def export_maintenance():
+        """Gera um arquivo Excel com o relatório completo de histórico de manutenções."""
+        try:
+            # CORREÇÃO: Esta abordagem é compatível com a configuração do seu banco de dados.
+            # 1. Busca os equipamentos com seus clientes.
+            equipments = Equipment.query.options(
+                joinedload(Equipment.client)
+            ).order_by(Equipment.code).all()
+
+            data_for_df = []
+            # 2. Itera sobre cada equipamento e carrega seu histórico com o técnico de forma otimizada.
+            for eq in equipments:
+                # A ordenação já vem da definição do modelo (order_by)
+                history_records = eq.maintenance_history.options(joinedload(MaintenanceHistory.technician)).all()
+                for history in history_records:
+                    data_for_df.append({
+                        'Data': history.maintenance_date.strftime('%d/%m/%Y'),
+                        'Equipamento (Código)': eq.code,
+                        'Equipamento (Modelo)': eq.model,
+                        'Cliente': eq.client.name,
+                        'Local': eq.location,
+                        'Categoria': history.category,
+                        'Técnico': history.technician.username,
+                        'Custo (R$)': float(history.cost) if history.cost else 0.0,
+                        'Descrição': history.description
+                    })
+
+            df = pd.DataFrame(data_for_df)
+
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='Manutencoes')
+            output.seek(0)
+
+            timestamp = datetime.now().strftime("%Y-%m-%d")
+            return send_file(
+                output,
+                as_attachment=True,
+                download_name=f'relatorio_manutencoes_{timestamp}.xlsx',
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        except Exception as e:
+            flash(f"Erro ao gerar o relatório Excel: {e}", "danger")
+            return redirect(url_for('full_history'))
+
+    @app.route('/time-clock', methods=['GET'])
+    @login_required
+    def time_clock_page():
+        """Página para o técnico registrar seu ponto."""
+        today = date.today()
+        # Busca o registro de hoje para o usuário logado
+        todays_record = TimeClock.query.filter_by(user_id=current_user.id, date=today).first()
+        return render_template('time_clock.html', record=todays_record, today=today)
+
+
+
+
+    @app.route('/time-clock/register', methods=['POST'])
+    @login_required
+    def register_time_clock():
+        """Registra uma entrada ou saída no ponto."""
+        action = request.form.get('action')
+        today = date.today()
+        
+        # Encontra ou cria o registro do dia
+        record = TimeClock.query.filter_by(user_id=current_user.id, date=today).first()
+        if not record:
+            record = TimeClock(user_id=current_user.id, date=today)
+            db.session.add(record)
+
+        now = datetime.now()
+        message = "Ação inválida."
+
+        # Atualiza o campo correspondente à ação
+        if action == 'morning_in' and not record.morning_check_in:
+            record.morning_check_in = now
+            message = f"Entrada da manhã registrada às {now.strftime('%H:%M')}."
+        elif action == 'morning_out' and record.morning_check_in and not record.morning_check_out:
+            record.morning_check_out = now
+            message = f"Saída da manhã registrada às {now.strftime('%H:%M')}."
+        elif action == 'afternoon_in' and record.morning_check_out and not record.afternoon_check_in:
+            record.afternoon_check_in = now
+            message = f"Entrada da tarde registrada às {now.strftime('%H:%M')}."
+        elif action == 'afternoon_out' and record.afternoon_check_in and not record.afternoon_check_out:
+            record.afternoon_check_out = now
+            message = f"Saída da tarde registrada às {now.strftime('%H:%M')}."
+        
+        try:
+            db.session.commit()
+            flash(message, 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao registrar ponto: {e}", 'danger')
+
+        return redirect(url_for('time_clock_page'))
+
+
+    @app.route('/reports/time-clock')
+    @login_required
+    @admin_required
+    def time_clock_report():
+        """Exibe o relatório de ponto para o admin."""
+        technicians = User.query.filter(User.role != 'admin').order_by(User.username).all()
+        
+        # Filtros
+        tech_id = request.args.get('technician_id', type=int)
+        month_str = request.args.get('month', datetime.now().strftime('%Y-%m'))
+        
+        try:
+            year, month = map(int, month_str.split('-'))
+        except ValueError:
+            year, month = datetime.now().year, datetime.now().month
+            month_str = f"{year}-{month:02d}"
+
+        # Query base
+        query = TimeClock.query
+        
+        # Aplica filtros
+        if tech_id:
+            query = query.filter(TimeClock.user_id == tech_id)
+        
+        query = query.filter(func.strftime('%Y-%m', TimeClock.date) == month_str)
+        
+        records = query.order_by(desc(TimeClock.date), TimeClock.user_id).all()
+        
+        # Calcula o total de horas do período filtrado
+        total_seconds = 0
+        for record in records:
+            if record.morning_check_in and record.morning_check_out:
+                total_seconds += (record.morning_check_out - record.morning_check_in).total_seconds()
+            if record.afternoon_check_in and record.afternoon_check_out:
+                total_seconds += (record.afternoon_check_out - record.afternoon_check_in).total_seconds()
+        
+        total_hours = f"{(total_seconds / 3600):.2f}".replace('.', ',')
+
+        return render_template('time_clock_report.html',
+                               technicians=technicians,
+                               records=records,
+                               total_hours=total_hours,
+                               filters=request.args,
+                               month_filter=month_str)
+    
 
 
 

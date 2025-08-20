@@ -26,24 +26,27 @@
         <nav class="bg-gray-800" x-data="{ mobileMenuOpen: false }">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 items-center justify-between">
-                    <!-- [LADO ESQUERDO] Logo e Links -->
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                            <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('login') }}" class="flex items-center space-x-3">
-                                <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-md sombra-logo">
+                                <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-md">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
                                 </div>
                                 <span class="text-2xl font-bold text-gray-100">Sacada<span class="text-indigo-600">Gear</span></span>
-                            </a>
+                           </a>
                         </div>
                         <div class="hidden md:block">
                             <div class="ml-10 flex items-baseline space-x-4">
                                 {% if current_user.is_authenticated %}
-                                    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Dashboard</a>
-                                     
+                                    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Manutenções</a>
+                                    <a href="{{ url_for('technician_tasks') }}" class="{% if request.endpoint == 'technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Tarefas</a>
+                                    <a href="{{ url_for('manage_expenses') }}" class="{% if request.endpoint == 'manage_expenses' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Despesas</a>
+                                    {% if current_user.role == 'technician' %}
+                                    <a href="{{ url_for('time_clock_page') }}" class="{% if request.endpoint == 'time_clock_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Ponto</a>
+                                    {% endif %}
                                     {% if current_user.role == 'admin' %}
                                     <div x-data="{ open: false }" class="relative">
                                         <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['client_list', 'new_client', 'edit_client', 'archived_clients'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
@@ -66,16 +69,16 @@
                                             <a href="{{ url_for('archived_list') }}" class="{% if request.endpoint == 'archived_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Arquivados</a>
                                         </div>
                                     </div>
-                                    <a href="{{ url_for('technician_tasks') }}" class="{% if request.endpoint == 'technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Tarefas</a>
                                    
-                                    
                                     <div x-data="{ open: false }" class="relative">
-                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['financial_report', 'full_history'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
+                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['financial_report', 'full_history', 'expense_report', 'time_clock_report'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
                                             <span>Relatórios</span><i class="fas fa-chevron-down ml-2 text-xs"></i>
                                         </button>
                                         <div x-show="open" x-cloak x-transition class="absolute left-0 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
                                             <a href="{{ url_for('financial_report') }}" class="{% if request.endpoint == 'financial_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Financeiro</a>
                                             <a href="{{ url_for('full_history') }}" class="{% if request.endpoint == 'full_history' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Histórico Completo</a>
+                                            <a href="{{ url_for('expense_report') }}" class="{% if request.endpoint == 'expense_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Relatório de Despesas</a>
+                                            <a href="{{ url_for('time_clock_report') }}" class="{% if request.endpoint == 'time_clock_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Relatório de Ponto</a>
                                         </div>
                                     </div>
                                     
@@ -94,7 +97,6 @@
                         </div>
                     </div>
 
-                    <!-- [LADO DIREITO] Notificações, Usuário e Sair -->
                     <div class="hidden md:block">
                         <div class="ml-4 flex items-center md:ml-6">
                             {% if current_user.is_authenticated %}
@@ -144,13 +146,14 @@
                 </div>
             </div>
 
-            <!-- Menu Mobile CORRIGIDO -->
             <div class="md:hidden" x-show="mobileMenuOpen" x-cloak @click.away="mobileMenuOpen = false">
-                <!-- Links de Navegação (Restaurados) -->
                 <div class="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-                    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Dashboard</a>
+                    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Manutenções</a>
                     <a href="{{ url_for('technician_tasks') }}" class="{% if request.endpoint == 'technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Tarefas</a>
-                    
+                    <a href="{{ url_for('manage_expenses') }}" class="{% if request.endpoint == 'manage_expenses' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Despesas</a>
+                    {% if current_user.role == 'technician' %}
+                    <a href="{{ url_for('time_clock_page') }}" class="{% if request.endpoint == 'time_clock_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Ponto</a>
+                    {% endif %}
                     {% if current_user.role == 'admin' %}
                     <div class="border-t border-gray-700 my-2"></div>
                     <h3 class="px-3 pt-2 pb-1 text-xs font-semibold uppercase text-gray-400">Clientes</h3>
@@ -167,12 +170,13 @@
                     <h3 class="px-3 pt-2 pb-1 text-xs font-semibold uppercase text-gray-400">Relatórios</h3>
                     <a href="{{ url_for('financial_report') }}" class="{% if request.endpoint == 'financial_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Financeiro</a>
                     <a href="{{ url_for('full_history') }}" class="{% if request.endpoint == 'full_history' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Histórico Completo</a>
+                    <a href="{{ url_for('expense_report') }}" class="{% if request.endpoint == 'expense_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Rel. Despesas</a>
+                    <a href="{{ url_for('time_clock_report') }}" class="{% if request.endpoint == 'time_clock_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Rel. Ponto</a>
 
                     <div class="border-t border-gray-700 my-2"></div>
                     <a href="{{ url_for('manage_settings') }}" class="{% if request.endpoint == 'manage_settings' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Configurações</a>
                     {% endif %}
                 </div>
-                <!-- Seção do Usuário -->
                 <div class="border-t border-gray-700 pb-3 pt-4">
                     <div class="flex items-center px-5">
                         <div class="flex-shrink-0"><i class="fas fa-user-circle text-4xl text-gray-400"></i></div>
@@ -219,7 +223,6 @@
         </main>
     </div>
 
-    <!-- Modal e Scripts -->
     <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">
@@ -269,5 +272,6 @@
             });
         });
     </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
