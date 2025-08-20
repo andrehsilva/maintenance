@@ -55,6 +55,8 @@
                                         <div x-show="open" x-cloak x-transition class="absolute left-0 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
                                             <a href="{{ url_for('client_list') }}" class="{% if request.endpoint == 'client_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Listar Clientes</a>
                                             <a href="{{ url_for('archived_clients') }}" class="{% if request.endpoint == 'archived_clients' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Arquivados</a>
+                                            <a href="{{ url_for('whatsapp_notifications') }}" class="{% if request.endpoint == 'whatsapp_notifications' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Notificar Clientes</a>
+
                                         </div>
                                     </div>
                                     

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Painel de Notificações{% endblock %}
+{% block header %}Painel de Notificações{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-md rounded-lg overflow-hidden">
+    <div class="p-4 sm:p-6 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800">Manutenções Próximas do Vencimento</h2>
+        <p class="mt-1 text-sm text-gray-600">
+            A lista abaixo mostra os equipamentos cuja manutenção está agendada para os próximos 
+            <span class="font-bold">{{ g.warning_days }}</span> dias. Clique no botão para enviar um lembrete via WhatsApp ao cliente.
+        </p>
+    </div>
+
+    {% if notifications_list %}
+    <ul class="divide-y divide-gray-200">
+        {% for item in notifications_list %}
+        <li class="p-4 sm:p-6 hover:bg-gray-50">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex-grow">
+                    <p class="font-semibold text-indigo-600">{{ item.equipment.code }} - {{ item.equipment.model }}</p>
+                    <div class="mt-1 text-sm text-gray-600 space-y-1">
+                        <p><i class="fas fa-building fa-fw mr-2 text-gray-400"></i><strong>Cliente:</strong> {{ item.equipment.client.name }}</p>
+                        <p><i class="fas fa-calendar-day fa-fw mr-2 text-gray-400"></i><strong>Vencimento:</strong> {{ item.equipment.next_maintenance_date.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                </div>
+                <div class="mt-4 sm:mt-0 sm:ml-4 flex-shrink-0">
+                    <a href="{{ item.whatsapp_link }}" target="_blank" class="w-full sm:w-auto justify-center inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700 transition-colors duration-200">
+                        <i class="fab fa-whatsapp mr-2"></i>Enviar Lembrete
+                    </a>
+                </div>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="text-center py-12">
+        <i class="fas fa-check-circle text-5xl text-green-400"></i>
+        <h3 class="mt-4 text-lg font-semibold text-gray-900">Tudo em Ordem!</h3>
+        <p class="mt-1 text-sm text-gray-600">Não há nenhuma manutenção próxima do vencimento para notificar no momento.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

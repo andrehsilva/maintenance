@@ -18,6 +18,7 @@ from sqlalchemy import desc, func, or_
 from sqlalchemy import extract
 from sqlalchemy.orm import joinedload, subqueryload
 from math import ceil
+from urllib.parse import quote
 
 # Importa as extensões e os modelos dos novos arquivos
 from extensions import db, login_manager
@@ -319,40 +320,65 @@ def register_routes(app):
         # Em app.py, dentro da função register_routes(app)
 
     # --- ROTA DE CONFIGURAÇÕES ---
+    # Em app.py, substitua a rota /settings existente por esta versão corrigida:
+
     @app.route('/settings', methods=['GET', 'POST'])
     @login_required
     @admin_required
     def manage_settings():
         if request.method == 'POST':
             try:
-                # Pega o novo valor do formulário e valida se é um número inteiro
+                # Salva o número de dias para o alerta
                 new_days_str = request.form.get('warning_days')
-                new_days_int = int(new_days_str)
+                if new_days_str:
+                    new_days_int = int(new_days_str)
+                    setting_days = db.session.get(Setting, 'maintenance_warning_days')
+                    if setting_days:
+                        setting_days.value = str(new_days_int)
+                    else:
+                        setting_days = Setting(key='maintenance_warning_days', value=str(new_days_int))
+                        db.session.add(setting_days)
 
-                # Busca a configuração no banco de dados
-                setting = db.session.get(Setting, 'maintenance_warning_days')
-                
-                if setting:
-                    # Se já existe, atualiza o valor
-                    setting.value = str(new_days_int)
-                else:
-                    # Se não existe, cria uma nova
-                    setting = Setting(key='maintenance_warning_days', value=str(new_days_int))
-                    db.session.add(setting)
-                
+                # CORREÇÃO: Salva o template da mensagem do WhatsApp
+                whatsapp_template_str = request.form.get('whatsapp_template')
+                if whatsapp_template_str is not None:  # Permite string vazia
+                    setting_template = db.session.get(Setting, 'whatsapp_message_template')
+                    if setting_template:
+                        setting_template.value = whatsapp_template_str
+                    else:
+                        setting_template = Setting(key='whatsapp_message_template', value=whatsapp_template_str)
+                        db.session.add(setting_template)
+
+                # IMPORTANTE: Commit após todas as alterações
                 db.session.commit()
                 flash('Configurações salvas com sucesso!', 'success')
 
-            except (ValueError, TypeError):
-                flash('O valor informado deve ser um número inteiro.', 'danger')
-            
+            except (ValueError, TypeError) as e:
+                db.session.rollback()
+                flash(f'Erro nos dados fornecidos: {str(e)}', 'danger')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erro ao salvar configurações: {str(e)}', 'danger')
+
             return redirect(url_for('manage_settings'))
 
-        # Para requisições GET, busca o valor atual para exibir no formulário
-        setting = db.session.get(Setting, 'maintenance_warning_days')
-        current_days = setting.value if setting else '15' # Padrão de 15 dias se não estiver no DB
+        # Para GET, busca os valores atuais para exibir no formulário
+        setting_days = db.session.get(Setting, 'maintenance_warning_days')
+        current_days = setting_days.value if setting_days else '15'
 
-        return render_template('settings.html', warning_days=current_days)
+        setting_template = db.session.get(Setting, 'whatsapp_message_template')
+        default_template = (
+            "Olá, {client_name}! Somos da SacadaGear e gostaríamos de lembrar sobre a manutenção do seu equipamento "
+            "'{equipment_model} ({equipment_code})', agendada para o dia {maintenance_date}. "
+            "Podemos confirmar o agendamento?"
+        )
+        current_template = setting_template.value if setting_template else default_template
+
+        return render_template('settings.html', 
+                             warning_days=current_days, 
+                             whatsapp_template=current_template)
+    
+
 
     # --- Rotas de Autenticação ---
     # Em app.py
@@ -1566,11 +1592,11 @@ def register_routes(app):
             extract('year', TimeClock.date) == year,
             extract('month', TimeClock.date) == month
             )
-    
-    
+
+
         records = query.order_by(desc(TimeClock.date), TimeClock.user_id).all()
-    
-    
+
+
         # Calcula o total de horas do período filtrado
         total_seconds = 0
         for record in records:
@@ -1578,11 +1604,11 @@ def register_routes(app):
                 total_seconds += (record.morning_check_out - record.morning_check_in).total_seconds()
             if record.afternoon_check_in and record.afternoon_check_out:
                 total_seconds += (record.afternoon_check_out - record.afternoon_check_in).total_seconds()
-    
-    
+
+
         total_hours = f"{(total_seconds / 3600):.2f}".replace('.', ',')
-    
-    
+
+
         return render_template(
             'time_clock_report.html',
             technicians=technicians,
@@ -1591,6 +1617,51 @@ def register_routes(app):
             filters=request.args,
             month_filter=month_str
         )
+
+
+
+    # --- ROTA PARA PAINEL DE NOTIFICAÇÕES WHATSAPP ---
+    @app.route('/notifications/whatsapp')
+    @login_required
+    @admin_required
+    def whatsapp_notifications():
+        try:
+            # Busca o template da mensagem no banco de dados
+            template_setting = db.session.get(Setting, 'whatsapp_message_template')
+            default_template = (
+                "Olá, {client_name}! Gostaríamos de lembrar sobre a manutenção do seu equipamento "
+                "'{equipment_model} ({equipment_code})', agendada para o dia {maintenance_date}."
+            )
+            message_template = template_setting.value if template_setting else default_template
+            
+            all_active_equipments = Equipment.query.filter_by(is_archived=False).all()
+            due_equipments = [eq for eq in all_active_equipments if eq.status == 'Próximo do vencimento']
+            notifications_list = []
+
+            for equipment in due_equipments:
+                if not equipment.client or not equipment.client.phone:
+                    continue
+
+                cleaned_phone = re.sub(r'\D', '', equipment.client.phone)
+                
+                # Monta a mensagem usando o template do banco de dados
+                message = message_template.format(
+                    client_name=(equipment.client.contact_person or equipment.client.name),
+                    equipment_model=equipment.model,
+                    equipment_code=equipment.code,
+                    maintenance_date=equipment.next_maintenance_date.strftime('%d/%m/%Y')
+                )
+                
+                notifications_list.append({
+                    'equipment': equipment,
+                    'whatsapp_link': f"https://wa.me/55{cleaned_phone}?text={quote(message)}" # Usa a mensagem formatada e codificada
+                })
+
+            return render_template('whatsapp_notifications.html', notifications_list=notifications_list)
+        except Exception as e:
+            flash(f"Erro ao carregar o painel de notificações: {e}", "danger")
+            return redirect(url_for('dashboard'))
+
 
 
 
