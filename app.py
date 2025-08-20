@@ -14,7 +14,7 @@ from werkzeug.utils import secure_filename
 from flask import send_file
 from flask import (Flask, abort, flash, redirect, render_template, request, url_for, jsonify)
 from flask_login import current_user, login_required, login_user, logout_user
-from sqlalchemy import desc, func, or_
+from sqlalchemy import desc, func, or_, extract
 from sqlalchemy.orm import joinedload, subqueryload
 from math import ceil
 
@@ -1537,11 +1537,11 @@ def register_routes(app):
     def time_clock_report():
         """Exibe o relatório de ponto para o admin."""
         technicians = User.query.filter(User.role != 'admin').order_by(User.username).all()
-        
+
         # Filtros
         tech_id = request.args.get('technician_id', type=int)
         month_str = request.args.get('month', datetime.now().strftime('%Y-%m'))
-        
+
         try:
             year, month = map(int, month_str.split('-'))
         except ValueError:
@@ -1550,15 +1550,19 @@ def register_routes(app):
 
         # Query base
         query = TimeClock.query
-        
-        # Aplica filtros
+
+        # Aplica filtro por técnico
         if tech_id:
             query = query.filter(TimeClock.user_id == tech_id)
-        
-        query = query.filter(func.strftime('%Y-%m', TimeClock.date) == month_str)
-        
+
+        # Aplica filtro por ano e mês (compatível com SQLite e Postgres)
+        query = query.filter(
+            extract('year', TimeClock.date) == year,
+            extract('month', TimeClock.date) == month
+        )
+
         records = query.order_by(desc(TimeClock.date), TimeClock.user_id).all()
-        
+
         # Calcula o total de horas do período filtrado
         total_seconds = 0
         for record in records:
@@ -1566,15 +1570,17 @@ def register_routes(app):
                 total_seconds += (record.morning_check_out - record.morning_check_in).total_seconds()
             if record.afternoon_check_in and record.afternoon_check_out:
                 total_seconds += (record.afternoon_check_out - record.afternoon_check_in).total_seconds()
-        
+
         total_hours = f"{(total_seconds / 3600):.2f}".replace('.', ',')
 
-        return render_template('time_clock_report.html',
-                               technicians=technicians,
-                               records=records,
-                               total_hours=total_hours,
-                               filters=request.args,
-                               month_filter=month_str)
+        return render_template(
+            'time_clock_report.html',
+            technicians=technicians,
+            records=records,
+            total_hours=total_hours,
+            filters=request.args,
+            month_filter=month_str
+        )
     
 
 
