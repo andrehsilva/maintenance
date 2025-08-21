@@ -19,12 +19,17 @@ from sqlalchemy import extract
 from sqlalchemy.orm import joinedload, subqueryload
 from math import ceil
 from urllib.parse import quote
+import pytz
 
 # Importa as extensões e os modelos dos novos arquivos
 from extensions import db, login_manager
 from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification, MaintenanceImage, Lead, Expense, TimeClock)
 
 from dotenv import load_dotenv 
+
+
+# --- Define o fuso horário padrão da aplicação ---
+FUSO_HORARIO_SP = pytz.timezone('America/Sao_Paulo')
 
 # --- Carrega as variáveis do arquivo .env para o ambiente ---
 load_dotenv()
@@ -44,6 +49,14 @@ def allowed_file(filename):
 # Lembre-se de ter estas duas linhas no topo do seu arquivo, antes de tudo:
 # from dotenv import load_dotenv
 # load_dotenv()
+
+def format_datetime_local(utc_datetime):
+    """Filtro Jinja para converter uma data UTC para o fuso de SP."""
+    if not utc_datetime:
+        return ""
+    # Converte a data do banco (assumida como UTC) para o fuso de SP
+    local_datetime = utc_datetime.astimezone(FUSO_HORARIO_SP)
+    return local_datetime.strftime('%d/%m/%Y às %H:%M')
 
 def create_app():
     """
@@ -1446,7 +1459,7 @@ def register_routes(app):
                 df.to_excel(writer, index=False, sheet_name='Despesas')
             output.seek(0)
             
-            timestamp = datetime.now().strftime("%Y-%m-%d")
+            timestamp = datetime.now(FUSO_HORARIO_SP).strftime("%Y-%m-%d")
             return send_file(
                 output,
                 as_attachment=True,
@@ -1531,7 +1544,7 @@ def register_routes(app):
             record = TimeClock(user_id=current_user.id, date=today)
             db.session.add(record)
 
-        now = datetime.now()
+        now = datetime.now(FUSO_HORARIO_SP)
         message = "Ação inválida."
 
         # Atualiza o campo correspondente à ação

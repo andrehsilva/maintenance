@@ -3,19 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SacadaGear - Troque o Caos pelo Controle</title>
+    <title>SacadaGear - Gestão Inteligente para Serviços de Campo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         body { font-family: 'Poppins', sans-serif; }
-        .sombra-logo { filter: drop-shadow(0px 2px 4px rgba(99, 102, 241, 0.4)); }
+        .sombra-logo { filter: drop-shadow(0px 2px 4px rgba(79, 70, 229, 0.4)); }
+        .feature-icon {
+            background-image: linear-gradient(to top right, #4f46e5, #818cf8);
+        }
     </style>
 </head>
-<body class="bg-white text-gray-800 antialiased">
+<body class="bg-gray-50 text-gray-800 antialiased">
 
-    <header class="bg-white/80 backdrop-blur-lg shadow-sm sticky top-0 z-50">
+    <header class="bg-white/90 backdrop-blur-lg shadow-sm sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
             <a href="#" class="flex items-center space-x-3">
                 <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-md sombra-logo">
@@ -36,16 +40,16 @@
     </header>
 
     <main>
-
-        <section class="py-24 md:py-32">
-            <div class="container mx-auto px-6 text-center">
+        <section class="relative py-24 md:py-32 bg-white">
+            <div class="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-white"></div>
+            <div class="container mx-auto px-6 text-center relative">
                 <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight">
                     Troque o caos das planilhas
                     <br>
                     <span class="text-indigo-600">pela paz do controle total.</span>
                 </h1>
                 <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600">
-                    O sistema para prestadores de serviço que não têm tempo a perder. Organize manutenções, equipes e clientes em um só lugar.
+                    O sistema para prestadores de serviço que não têm tempo a perder. Organize manutenções, equipes, clientes e finanças em um só lugar.
                 </p>
                 <div class="mt-10">
                     <a href="{{ url_for('lead_form') }}" class="inline-block px-8 py-4 text-lg font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-2xl shadow-indigo-500/40">
@@ -55,76 +59,64 @@
             </div>
         </section>
 
-        <section class="py-20">
+        <section id="features" class="py-20 bg-white">
             <div class="container mx-auto px-6">
-                <div class="text-center">
-                    <h2 class="text-3xl font-bold">Sua rotina parece com isso?</h2>
-                    <p class="mt-2 text-gray-600 max-w-xl mx-auto">Se você respondeu 'sim' a qualquer um destes pontos, você está no lugar certo.</p>
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Uma plataforma, controle absoluto.</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Tudo que sua equipe precisa para ser mais produtiva, do escritório ao campo.</p>
                 </div>
-                <div class="grid md:grid-cols-3 gap-8 mt-12 text-center">
-                    <div class="p-8 bg-gray-50 rounded-2xl">
-                        <div class="flex justify-center items-center h-16 w-16 mx-auto bg-red-100 text-red-600 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
+                            <i class="fas fa-calendar-check fa-lg"></i>
                         </div>
-                        <h3 class="mt-6 font-semibold">Prazos perdidos</h3>
-                        <p class="mt-2 text-sm text-gray-600">Manutenções vencidas gerando chamadas de clientes insatisfeitos e multas contratuais.</p>
+                        <h3 class="mt-6 text-xl font-bold">Controle de Manutenções</h3>
+                        <p class="mt-2 text-gray-600">Dashboard visual que mostra o que está vencido, em dia ou próximo do vencimento. Nunca mais perca um prazo.</p>
                     </div>
-                    <div class="p-8 bg-gray-50 rounded-2xl">
-                        <div class="flex justify-center items-center h-16 w-16 mx-auto bg-amber-100 text-amber-600 rounded-full">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
+                            <i class="fas fa-users fa-lg"></i>
                         </div>
-                        <h3 class="mt-6 font-semibold">Falta de provas</h3>
-                        <p class="mt-2 text-sm text-gray-600">Dificuldade para comprovar o serviço feito, gerando desconfiança e problemas na hora de cobrar.</p>
+                        <h3 class="mt-6 text-xl font-bold">Gestão de Clientes e Equipamentos</h3>
+                        <p class="mt-2 text-gray-600">Centralize todos os dados dos seus clientes e seus respectivos equipamentos, com histórico completo e fácil acesso.</p>
                     </div>
-                    <div class="p-8 bg-gray-50 rounded-2xl">
-                        <div class="flex justify-center items-center h-16 w-16 mx-auto bg-sky-100 text-sky-600 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
+                            <i class="fas fa-whatsapp fa-lg"></i>
                         </div>
-                        <h3 class="mt-6 font-semibold">Equipe desinformada</h3>
-                        <p class="mt-2 text-sm text-gray-600">Técnicos em campo sem acesso fácil ao histórico do cliente ou à localização correta.</p>
+                        <h3 class="mt-6 text-xl font-bold">Lembretes Automáticos</h3>
+                        <p class="mt-2 text-gray-600">Painel inteligente que prepara lembretes de manutenção para enviar via WhatsApp com um clique. Proatividade que encanta o cliente.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
+                            <i class="fas fa-dollar-sign fa-lg"></i>
+                        </div>
+                        <h3 class="mt-6 text-xl font-bold">Controle de Gastos e Custos</h3>
+                        <p class="mt-2 text-gray-600">Técnicos registram despesas diárias e o admin acompanha tudo em relatórios financeiros, analisando custos por cliente, equipamento e período.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
+                            <i class="fas fa-clipboard-list fa-lg"></i>
+                        </div>
+                        <h3 class="mt-6 text-xl font-bold">Gerenciador de Tarefas</h3>
+                        <p class="mt-2 text-gray-600">Crie e atribua tarefas avulsas para sua equipe. Cada técnico vê e atualiza o status das suas, e o admin acompanha o progresso de todos.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
+                            <i class="fas fa-clock fa-lg"></i>
+                        </div>
+                        <h3 class="mt-6 text-xl font-bold">Controle de Ponto</h3>
+                        <p class="mt-2 text-gray-600">Sistema simples para o técnico registrar entradas e saídas. O admin acompanha as horas trabalhadas em relatórios detalhados.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="py-20 bg-indigo-700 text-white">
-            <div class="container mx-auto px-6">
-                <div class="text-center">
-                    <h2 class="text-3xl font-bold">Apresentando a solução definitiva</h2>
-                    <p class="mt-2 text-indigo-200 max-w-xl mx-auto">O SacadaGear transforma o caos em um fluxo de trabalho inteligente.</p>
-                </div>
-                <div class="grid md:grid-cols-3 gap-8 mt-12">
-                    <div class="p-6">
-                        <h3 class="font-semibold text-xl">✅ Controle preditivo</h3>
-                        <p class="mt-2 text-sm text-indigo-200">Nosso dashboard antecipa os vencimentos por você. Planeje suas rotas, otimize seu tempo e nunca mais seja pego de surpresa.</p>
-                    </div>
-                    <div class="p-6">
-                        <h3 class="font-semibold text-xl">📸 Histórico digital e visual</h3>
-                        <p class="mt-2 text-sm text-indigo-200">Cada serviço vira um registro completo com data, custos, técnico e FOTOS. Transparência que gera confiança e valoriza seu trabalho.</p>
-                    </div>
-                    <div class="p-6">
-                        <h3 class="font-semibold text-xl">📲 Inteligência em campo</h3>
-                        <p class="mt-2 text-sm text-indigo-200">Com um QR Code no equipamento, seu técnico tem o histórico na mão e o endereço no mapa com um clique. Mais produtividade, menos erros.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- <section class="py-20">
-            <div class="container mx-auto px-6 max-w-3xl text-center">
-                <img src="https://i.imgur.com/g8e1a1M.png" class="w-16 h-16 rounded-full mx-auto shadow-lg" alt="Foto do cliente">
-                <div class="mt-6">
-                    <p class="text-xl italic text-gray-700">"Desde que usamos o SacadaGear, reduzimos em 30% o tempo gasto com agendamentos e nunca mais perdemos um prazo. Nossos clientes notaram a diferença no profissionalismo."</p>
-                    <p class="mt-4 font-bold text-gray-900">— João Silva</p>
-                    <p class="text-sm text-indigo-600">Gestor de Manutenção Predial</p>
-                </div>
-            </div>
-        </section> -->
-
-        <section class="py-20 bg-gray-100">
+        <section class="py-20 bg-gray-800">
             <div class="container mx-auto px-6 text-center">
-                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">Pronto para eliminar o caos da sua operação?</h2>
-                <p class="mt-4 max-w-xl mx-auto text-gray-600">
+                <h2 class="text-3xl md:text-4xl font-extrabold text-white">Pronto para eliminar o caos da sua operação?</h2>
+                <p class="mt-4 max-w-xl mx-auto text-gray-300">
                     Agende uma demonstração rápida e sem compromisso. Veja em 15 minutos como o SacadaGear pode transformar seu negócio.
                 </p>
                 <div class="mt-8">
@@ -136,7 +128,7 @@
         </section>
     </main>
 
-    <footer class="bg-gray-800 text-white">
+    <footer class="bg-gray-900 text-white">
         <div class="container mx-auto px-6 py-8 text-center">
             <p>&copy; 2025 SacadaGear. Todos os direitos reservados.</p>
             <p class="text-sm text-gray-400 mt-1">Uma solução SacadaWeb.</p>

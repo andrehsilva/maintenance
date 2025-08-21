@@ -153,6 +153,7 @@ dependencies = [
     { name = "openpyxl" },
     { name = "pandas" },
     { name = "psycopg2-binary" },
+    { name = "pytz" },
     { name = "qrcode", extra = ["pil"] },
     { name = "werkzeug" },
 ]
@@ -166,6 +167,7 @@ requires-dist = [
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.3.1" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
+    { name = "pytz", specifier = ">=2025.2" },
     { name = "qrcode", extras = ["pil"], specifier = ">=8.2" },
     { name = "werkzeug", specifier = ">=3.1.3" },
 ]
