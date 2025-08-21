@@ -4,7 +4,6 @@
 
 {% block content %}
 <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md">
-    <!-- Seção de Filtros -->
     <form method="GET" action="{{ url_for('time_clock_report') }}">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
             <div>
@@ -27,7 +26,6 @@
         </div>
     </form>
 
-    <!-- Seção de Resumo -->
     <div class="mt-6 bg-gray-50 p-4 rounded-lg">
         <dl class="overflow-hidden rounded-lg bg-white shadow">
             <div class="px-4 py-5 sm:p-6">
@@ -37,7 +35,6 @@
         </dl>
     </div>
 
-    <!-- Tabela de Resultados -->
     <div class="mt-8 flow-root">
         <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
@@ -58,10 +55,10 @@
                         <tr>
                             <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">{{ record.date.strftime('%d/%m/%Y') }}</td>
                             <td class="px-3 py-4 text-sm text-gray-500">{{ record.technician.username }}</td>
-                            <td class="px-3 py-4 text-sm text-gray-500">{{ record.morning_check_in.strftime('%H:%M') if record.morning_check_in else '-' }}</td>
-                            <td class="px-3 py-4 text-sm text-gray-500">{{ record.morning_check_out.strftime('%H:%M') if record.morning_check_out else '-' }}</td>
-                            <td class="px-3 py-4 text-sm text-gray-500">{{ record.afternoon_check_in.strftime('%H:%M') if record.afternoon_check_in else '-' }}</td>
-                            <td class="px-3 py-4 text-sm text-gray-500">{{ record.afternoon_check_out.strftime('%H:%M') if record.afternoon_check_out else '-' }}</td>
+                            <td class="px-3 py-4 text-sm text-gray-500">{{ (record.morning_check_in | localdatetime('%H:%M')) if record.morning_check_in else '-' }}</td>
+                            <td class="px-3 py-4 text-sm text-gray-500">{{ (record.morning_check_out | localdatetime('%H:%M')) if record.morning_check_out else '-' }}</td>
+                            <td class="px-3 py-4 text-sm text-gray-500">{{ (record.afternoon_check_in | localdatetime('%H:%M')) if record.afternoon_check_in else '-' }}</td>
+                            <td class="px-3 py-4 text-sm text-gray-500">{{ (record.afternoon_check_out | localdatetime('%H:%M')) if record.afternoon_check_out else '-' }}</td>
                             <td class="px-3 py-4 text-sm font-medium text-gray-700">{{ record.total_hours }}</td>
                         </tr>
                         {% else %}

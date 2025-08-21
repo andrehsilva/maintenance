@@ -50,12 +50,28 @@ def allowed_file(filename):
 # from dotenv import load_dotenv
 # load_dotenv()
 
-def format_datetime_local(utc_datetime):
-    """Filtro Jinja para converter uma data UTC para o fuso de SP."""
+# Em app.py
+
+def format_datetime_local(utc_datetime, fmt=None):
+    """
+    Filtro Jinja para converter uma data UTC (ciente ou ingênua) para o fuso de SP.
+    """
     if not utc_datetime:
         return ""
-    # Converte a data do banco (assumida como UTC) para o fuso de SP
+
+    # VERIFICAÇÃO IMPORTANTE: Se o datetime do banco for "ingênuo" (sem fuso),
+    # nós o tornamos "ciente" de que ele é UTC.
+    if utc_datetime.tzinfo is None:
+        utc_datetime = pytz.utc.localize(utc_datetime)
+
+    # Agora que temos certeza que é um datetime "ciente", convertemos para o fuso de SP.
     local_datetime = utc_datetime.astimezone(FUSO_HORARIO_SP)
+    
+    # Se um formato for especificado (ex: '%H:%M'), usa ele.
+    if fmt:
+        return local_datetime.strftime(fmt)
+    
+    # Senão, usa o formato padrão completo.
     return local_datetime.strftime('%d/%m/%Y às %H:%M')
 
 def create_app():
@@ -94,6 +110,10 @@ def create_app():
     basedir = os.path.abspath(os.path.dirname(__file__))
     app.config['UPLOAD_FOLDER'] = os.path.join(basedir, UPLOAD_FOLDER)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+    # Isso "ensina" o Jinja (motor de templates) sobre o nosso novo filtro.
+    app.jinja_env.filters['localdatetime'] = format_datetime_local
+    # ---------------------------------------------
 
     # --- 3. INICIALIZAÇÃO DAS EXTENSÕES ---
     # Associa as extensões (db, login_manager) com a instância 'app'.
