@@ -51,3 +51,4 @@ python-dotenv
 pandas
 openpyxl
 pytz
+Flask-Migrate
