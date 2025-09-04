@@ -3,6 +3,7 @@ alembic==1.16.5
 Flask==3.1.1
 Flask-Migrate==4.1.0
 Flask-SQLAlchemy==3.1.1
+flask-login>=0.6.3
 
 gunicorn==23.0.0
 
