@@ -14,7 +14,7 @@ from extensions import db
 class Setting(db.Model):
     """Modelo para armazenar configurações gerais da aplicação."""
     key = db.Column(db.String(50), primary_key=True)
-    value = db.Column(db.String(100), nullable=False)
+    value = db.Column(db.String(250), nullable=False)
 
     def __repr__(self):
         return f'<Setting {self.key}>'

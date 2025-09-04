@@ -20,6 +20,7 @@ from sqlalchemy.orm import joinedload, subqueryload
 from math import ceil
 from urllib.parse import quote
 import pytz
+from flask_migrate import Migrate
 
 # Importa as extensões e os modelos dos novos arquivos
 from extensions import db, login_manager
@@ -118,6 +119,7 @@ def create_app():
     # --- 3. INICIALIZAÇÃO DAS EXTENSÕES ---
     # Associa as extensões (db, login_manager) com a instância 'app'.
     db.init_app(app)
+    Migrate(app, db)
     login_manager.init_app(app)
     login_manager.login_view = 'login'
     login_manager.login_message = "Por favor, faça o login para acessar esta página."
