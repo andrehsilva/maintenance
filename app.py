@@ -24,7 +24,7 @@ from flask_migrate import Migrate
 
 # Importa as extensões e os modelos dos novos arquivos
 from extensions import db, login_manager
-from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification, MaintenanceImage, Lead, Expense, TimeClock)
+from models import (Client, Equipment, MaintenanceHistory, Task, TaskAssignment, User, Setting, Notification, MaintenanceImage, Lead, Expense, TimeClock, StockItem, MaintenancePartUsed)
 
 from dotenv import load_dotenv 
 
@@ -689,7 +689,8 @@ def register_routes(app):
         return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
     
 
-    # Função reescrita:
+    
+    # --- ROTAS DE HISTÓRICO DE MANUTENÇÃO (ATUALIZADAS) ---
     @app.route('/history/new/<int:equipment_id>', methods=['GET', 'POST'])
     @login_required
     def new_maintenance_history(equipment_id):
@@ -698,74 +699,107 @@ def register_routes(app):
             abort(404)
         if current_user.role != 'admin' and equipment.user_id != current_user.id:
             abort(403)
-            
+
+        # --- Lógica de Envio de Dados (POST) ---
         if request.method == 'POST':
             try:
-                # --- Cria o registro de manutenção primeiro ---
+                # 1. Pega os dados básicos do formulário
                 maintenance_date = datetime.strptime(request.form.get('maintenance_date'), '%Y-%m-%d').date()
                 cost_str = request.form.get('cost')
-                cost = float(cost_str.replace(',', '.')) if cost_str else None
-                
+                labor_cost = float(cost_str.replace(',', '.')) if cost_str else 0.0
+
+                # Pega as listas de peças e quantidades
+                part_ids = request.form.getlist('part_ids')
+                part_quantities = request.form.getlist('part_quantities')
+
+                total_parts_cost = 0.0
+                parts_to_process = []
+
+                # 2. Loop de VALIDAÇÃO: Verifica o estoque e calcula o custo das peças ANTES de salvar
+                for part_id, qty_str in zip(part_ids, part_quantities):
+                    if part_id and qty_str:
+                        item_id = int(part_id)
+                        quantity_used = int(qty_str)
+
+                        item = db.session.get(StockItem, item_id)
+                        if not item or item.quantity < quantity_used:
+                            error_msg = f'Estoque insuficiente para "{item.name}". Disponível: {item.quantity}, Tentativa de uso: {quantity_used}.'
+                            flash(error_msg, 'danger')
+                            # Se falhar, precisa recarregar o form com os dados corretos
+                            raise ValueError(error_msg)
+
+                        if item.unit_cost:
+                            total_parts_cost += float(item.unit_cost) * quantity_used
+
+                        parts_to_process.append({'item': item, 'quantity': quantity_used})
+
+                # 3. Cria o registro de manutenção principal
                 history_entry = MaintenanceHistory(
-                    maintenance_date=maintenance_date, 
+                    maintenance_date=maintenance_date,
                     category=request.form.get('category'),
-                    description=request.form.get('description'), 
+                    description=request.form.get('description'),
                     equipment_id=equipment_id,
                     technician_id=current_user.id,
-                    cost=cost
+                    cost=float(labor_cost) + total_parts_cost # Custo total = Mão de Obra + Peças
                 )
                 db.session.add(history_entry)
-                # Usamos flush para obter o ID do history_entry antes do commit final
-                db.session.flush()
-    
-                # --- INÍCIO DA LÓGICA DE UPLOAD DE IMAGENS ---
+                db.session.flush() # Força o ID para o history_entry
+
+                # 4. Loop de EXECUÇÃO: Dá baixa no estoque e cria os registros de peças usadas
+                for part_data in parts_to_process:
+                    part_data['item'].quantity -= part_data['quantity']
+
+                    part_used_entry = MaintenancePartUsed(
+                        maintenance_history_id=history_entry.id,
+                        stock_item_id=part_data['item'].id,
+                        quantity_used=part_data['quantity']
+                    )
+                    db.session.add(part_used_entry)
+
+                # 5. Lógica de Upload de Fotos (mantida a sua)
                 photos = request.files.getlist('photos')
                 if len(photos) > 3:
-                    flash('Você pode enviar no máximo 3 fotos.', 'danger')
-                    # Damos rollback para não salvar o registro de manutenção se as fotos falharem
-                    db.session.rollback()
-                    return redirect(request.url)
-    
+                    raise ValueError("Você pode enviar no máximo 3 fotos.")
                 for photo in photos:
-                    # Verifica se um arquivo foi realmente enviado e se a extensão é permitida
                     if photo and allowed_file(photo.filename):
                         ext = photo.filename.rsplit('.', 1)[1].lower()
-                        # Cria um nome de arquivo único para evitar sobrescrever arquivos
                         filename = secure_filename(f"{uuid.uuid4()}.{ext}")
                         photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                        
-                        # Cria o registro da imagem no banco de dados
                         new_image = MaintenanceImage(filename=filename, maintenance_history_id=history_entry.id)
                         db.session.add(new_image)
-                # --- FIM DA LÓGICA DE UPLOAD ---
-    
-                # Atualiza a data da última manutenção no equipamento
+
+                # 6. Atualiza o equipamento e notifica
                 equipment.last_maintenance_date = maintenance_date
-                
-                # --- LÓGICA DE NOTIFICAÇÃO ---
-                admin_msg = f"Nova manutenção em '{equipment.code}' registrada por {current_user.username}."
-                notify_admins(admin_msg, url_for('equipment_history', equipment_id=equipment.id), excluded_user_id=current_user.id)
-                
-                if equipment.user_id != current_user.id:
-                    tech_msg = f"Uma nova manutenção foi registrada no equipamento '{equipment.code}'."
-                    tech_notif = Notification(user_id=equipment.user_id, message=tech_msg, url=url_for('equipment_history', equipment_id=equipment.id))
-                    db.session.add(tech_notif)
-                
-                # Agora faz o commit de tudo (manutenção, imagens e notificações)
-                db.session.commit()
-                
-                flash('Registro de manutenção adicionado com sucesso!', 'success')
+                notify_admins(f"Nova manutenção em '{equipment.code}' por {current_user.username}.", url_for('equipment_history', equipment_id=equipment.id), excluded_user_id=current_user.id)
+
+                db.session.commit() # Salva tudo no banco
+                flash('Registro de manutenção e baixa de estoque realizados com sucesso!', 'success')
                 return redirect(url_for('equipment_history', equipment_id=equipment_id))
-                
-            except (ValueError, TypeError):
+
+            except (ValueError, TypeError) as e:
                 db.session.rollback()
-                flash('Valor de custo inválido. Use um formato como 150.50.', 'danger')
+                # A flash message já foi definida no loop de validação se o erro foi de estoque
+                if 'Estoque insuficiente' not in str(e):
+                    flash(f'Erro nos dados: {e}. Verifique os valores.', 'danger')
             except Exception as e:
                 db.session.rollback()
-                flash(f'Erro ao adicionar registro: {e}', 'danger')
-                
-        return render_template('maintenance_form.html', equipment=equipment, categories=MAINTENANCE_CATEGORIES, now=datetime.utcnow())
+                flash(f'Ocorreu um erro inesperado: {e}', 'danger')
 
+        # --- Lógica de Exibição da Página (GET) ou se o POST falhar ---
+        stock_items_from_db = StockItem.query.filter(StockItem.quantity > 0).order_by(StockItem.name).all()
+        # Converte a lista para o formato JSON que o AlpineJS espera
+        stock_items_json = [
+            {'id': item.id, 'name': item.name, 'quantity': item.quantity}
+            for item in stock_items_from_db
+        ]
+
+        return render_template(
+            'maintenance_form.html',
+            equipment=equipment,
+            categories=MAINTENANCE_CATEGORIES,
+            stockItems=stock_items_json, # Envia a variável JSON correta
+            now=datetime.utcnow()
+        )
 
 
     @app.route('/history/edit/<int:history_id>', methods=['GET', 'POST'])
@@ -776,83 +810,290 @@ def register_routes(app):
             abort(404)
         if current_user.role != 'admin' and history_record.technician_id != current_user.id:
             abort(403)
+
         if request.method == 'POST':
             try:
-                history_record.maintenance_date = datetime.strptime(request.form.get('maintenance_date'), '%Y-%m-%d').date()
+                # --- Devolve as peças antigas para o estoque antes de processar as novas ---
+                for part_used in history_record.parts_used:
+                    part_used.item.quantity += part_used.quantity_used
+                MaintenancePartUsed.query.filter_by(maintenance_history_id=history_id).delete()
+
+                # --- Processa os novos dados do formulário ---
+                maintenance_date = datetime.strptime(request.form.get('maintenance_date'), '%Y-%m-%d').date()
+                cost_str = request.form.get('cost')
+                labor_cost = float(cost_str.replace(',', '.')) if cost_str else 0.0
+                
+                part_ids = request.form.getlist('part_ids')
+                part_quantities = request.form.getlist('part_quantities')
+
+                new_parts_cost = 0.0
+                parts_to_process = []
+
+                # Validação de estoque para as novas peças
+                for part_id, qty_str in zip(part_ids, part_quantities):
+                    if part_id and qty_str:
+                        item = db.session.get(StockItem, int(part_id))
+                        quantity_used = int(qty_str)
+                        if not item or item.quantity < quantity_used:
+                            raise ValueError(f'Estoque insuficiente para "{item.name}".')
+                        if item.unit_cost:
+                            new_parts_cost += float(item.unit_cost) * quantity_used
+                        parts_to_process.append({'item': item, 'quantity': quantity_used})
+
+                # Atualiza o registro principal
+                history_record.maintenance_date = maintenance_date
                 history_record.category = request.form.get('category')
                 history_record.description = request.form.get('description')
-                cost_str = request.form.get('cost')
-                history_record.cost = float(cost_str.replace(',', '.')) if cost_str else None
-                db.session.commit()
-                admin_msg = f"Registro de manutenção em '{history_record.equipment.code}' foi atualizado por {current_user.username}."
-                admins = User.query.filter_by(role='admin').all()
-                for admin in admins:
-                    if admin.id != current_user.id:
-                        notif = Notification(user_id=admin.id, message=admin_msg, url=url_for('equipment_history', equipment_id=history_record.equipment.id))
-                        db.session.add(notif)
-                if history_record.equipment.user_id != current_user.id:
-                    tech_msg = f"O registro de manutenção do equipamento '{history_record.equipment.code}' foi atualizado."
-                    notif_technician = Notification(user_id=history_record.equipment.user_id, message=tech_msg, url=url_for('equipment_history', equipment_id=history_record.equipment.id))
-                    db.session.add(notif_technician)
+                history_record.cost = float(labor_cost) + new_parts_cost
+
+                # Dá baixa no estoque e cria os novos registros de peças usadas
+                for part_data in parts_to_process:
+                    part_data['item'].quantity -= part_data['quantity']
+                    new_part_used = MaintenancePartUsed(
+                        maintenance_history_id=history_id,
+                        stock_item_id=part_data['item'].id,
+                        quantity_used=part_data['quantity']
+                    )
+                    db.session.add(new_part_used)
+                
+                # Upload de novas fotos
+                photos = request.files.getlist('photos')
+                if len(photos) + len(history_record.images) > 3:
+                    raise ValueError("O total de fotos não pode exceder 3.")
+                for photo in photos:
+                    if photo and allowed_file(photo.filename):
+                        ext = photo.filename.rsplit('.', 1)[1].lower()
+                        filename = secure_filename(f"{uuid.uuid4()}.{ext}")
+                        photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        db.session.add(MaintenanceImage(filename=filename, maintenance_history_id=history_record.id))
+
                 db.session.commit()
                 flash('Registro de manutenção atualizado com sucesso!', 'success')
                 return redirect(url_for('equipment_history', equipment_id=history_record.equipment_id))
-            except (ValueError, TypeError):
-                flash('Valor de custo inválido. Use um formato como 150.50.', 'danger')
+
+            except (ValueError, TypeError) as e:
+                db.session.rollback()
+                flash(f'Erro nos dados: {e}.', 'danger')
             except Exception as e:
                 db.session.rollback()
-                flash(f'Erro ao atualizar registro: {e}', 'danger')
-        return render_template('maintenance_form.html', title="Editar Manutenção", equipment=history_record.equipment, categories=MAINTENANCE_CATEGORIES, history_record=history_record)
+                flash(f'Ocorreu um erro inesperado: {e}', 'danger')
+        
+        # --- Lógica para GET (Exibir o formulário) ---
+        stock_items_from_db = StockItem.query.order_by(StockItem.name).all()
+        stock_items_json = [{'id': item.id, 'name': item.name, 'quantity': item.quantity} for item in stock_items_from_db]
+        
+        parts_used_json = [{'stock_item_id': part.stock_item_id, 'quantity_used': part.quantity_used} for part in history_record.parts_used]
 
-    # Em app.py
+        return render_template(
+            'maintenance_form.html',
+            title="Editar Manutenção",
+            equipment=history_record.equipment,
+            categories=MAINTENANCE_CATEGORIES,
+            history_record=history_record,
+            stockItems=stock_items_json,
+            parts_used_json=parts_used_json,
+            now=datetime.utcnow()
+        )
+
+    @app.route('/history/delete_photo/<int:image_id>', methods=['POST'])
+    @login_required
+    def delete_maintenance_photo(image_id):
+        image = db.session.get(MaintenanceImage, image_id)
+        if not image:
+            abort(404)
+        
+        history_record = image.maintenance_record
+        # Validação de permissão
+        if current_user.role != 'admin' and history_record.technician_id != current_user.id:
+            abort(403)
+            
+        try:
+            # Deleta o arquivo físico
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], image.filename))
+            # Deleta o registro no banco
+            db.session.delete(image)
+            db.session.commit()
+            flash('Foto removida com sucesso.', 'success')
+        except OSError:
+            flash('Erro ao remover o arquivo da foto, mas o registro foi limpo.', 'warning')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao remover foto: {e}', 'danger')
+            
+        return redirect(url_for('edit_maintenance', history_id=history_record.id))
+
+
+
+
+
 
     @app.route('/history/delete/<int:history_id>', methods=['POST'])
     @login_required
     def delete_maintenance(history_id):
         history_record = db.session.get(MaintenanceHistory, history_id)
-        if not history_record:
-            abort(404)
-        if current_user.role != 'admin' and history_record.technician_id != current_user.id:
-            abort(403)
-    
+        if not history_record: abort(404)
+        if current_user.role != 'admin' and history_record.technician_id != current_user.id: abort(403)
+        
         try:
-            # --- INÍCIO DA CORREÇÃO ---
-            # 1. Pegue todas as informações ANTES de deletar
             equipment_id = history_record.equipment_id
-            equipment_code = history_record.equipment.code
-            technician_id = history_record.equipment.user_id
+            
+            # Devolve as peças ao estoque
+            for part_used in history_record.parts_used:
+                part_used.item.quantity += part_used.quantity_used
+            
+            # Deleta as imagens
             image_filenames = [image.filename for image in history_record.images]
-            # --- FIM DA CORREÇÃO ---
-    
-            # 2. Delete os arquivos físicos das imagens da pasta 'uploads'
             for filename in image_filenames:
                 try:
                     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 except OSError:
-                    # Ignora o erro se o arquivo não for encontrado
                     pass
-                
-            # 3. Delete o registro do banco de dados (o cascade deleta as referências das imagens)
+            
             db.session.delete(history_record)
             db.session.commit()
-    
-            # 4. Crie as notificações usando as informações salvas
-            admin_msg = f"Um registro de manutenção do equipamento '{equipment_code}' foi deletado por {current_user.username}."
-            notify_admins(admin_msg, url_for('equipment_history', equipment_id=equipment_id), excluded_user_id=current_user.id)
-            
-            if technician_id != current_user.id:
-                tech_msg = f"Um registro de manutenção do equipamento '{equipment_code}' foi deletado."
-                notif_technician = Notification(user_id=technician_id, message=tech_msg, url=url_for('equipment_history', equipment_id=equipment_id))
-                db.session.add(notif_technician)
-            
-            db.session.commit()
-            flash('Registro de manutenção deletado com sucesso.', 'success')
-    
+            flash('Registro de manutenção deletado e estoque restaurado.', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao deletar registro: {e}', 'danger')
             
         return redirect(url_for('equipment_history', equipment_id=equipment_id))
+
+    
+    @app.route('/stock/manual-adjust/<int:item_id>', methods=['GET', 'POST'])
+    @login_required
+    @admin_required
+    def manual_stock_adjust(item_id):
+        """Permite ajuste manual de estoque para itens que não requerem tracking."""
+        item = db.session.get(StockItem, item_id)
+        if not item:
+            abort(404)
+
+        if request.method == 'POST':
+            try:
+                adjustment_type = request.form.get('adjustment_type')
+                quantity = int(request.form.get('quantity'))
+                reason = request.form.get('reason', '')
+                notes = request.form.get('notes', '')
+
+                if adjustment_type == 'add':
+                    item.quantity += quantity
+                    flash(f'✅ Adicionadas {quantity} unidades ao estoque de "{item.name}".', 'success')
+                elif adjustment_type == 'remove':
+                    if item.quantity < quantity:
+                        flash('❌ Quantidade insuficiente em estoque.', 'danger')
+                        return redirect(url_for('manual_stock_adjust', item_id=item_id))
+                    item.quantity -= quantity
+                    flash(f'✅ Removidas {quantity} unidades do estoque de "{item.name}".', 'success')
+
+                # Aqui você pode registrar o ajuste em uma tabela de log se desejar
+                db.session.commit()
+                return redirect(url_for('stock_list'))
+
+            except (ValueError, TypeError):
+                flash('❌ Quantidade inválida.', 'danger')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'❌ Erro ao ajustar estoque: {e}', 'danger')
+
+        return render_template('manual_stock_adjust.html', item=item)
+
+
+
+
+    @app.route('/stock/quick-adjust/<int:item_id>', methods=['POST'])
+    @login_required
+    @admin_required
+    def quick_stock_adjust(item_id):
+        """Ajuste rápido de estoque diretamente da lista."""
+        item = db.session.get(StockItem, item_id)
+        if not item:
+            flash('Item não encontrado.', 'danger')
+            return redirect(url_for('stock_list'))
+
+        if item.requires_tracking:
+            flash('Este item requer controle automático. Use o sistema de manutenções.', 'warning')
+            return redirect(url_for('stock_list'))
+
+        try:
+            adjustment_type = request.form.get('adjustment_type')
+            quantity = int(request.form.get('quantity'))
+
+            if adjustment_type == 'add':
+                item.quantity += quantity
+                flash(f'Adicionadas {quantity} unidades ao estoque de "{item.name}".', 'success')
+            elif adjustment_type == 'remove':
+                if item.quantity < quantity:
+                    flash('Quantidade insuficiente em estoque.', 'danger')
+                    return redirect(url_for('stock_list'))
+                item.quantity -= quantity
+                flash(f'Removidas {quantity} unidades do estoque de "{item.name}".', 'success')
+
+            db.session.commit()
+
+        except (ValueError, TypeError):
+            flash('Quantidade inválida.', 'danger')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao ajustar estoque: {e}', 'danger')
+
+        return redirect(url_for('stock_list'))
+
+
+    @app.route('/reports/stock-movement')
+    @login_required
+    @admin_required
+    def stock_movement_report():
+        """Relatório completo de movimentação de estoque."""
+        # Filtros
+        item_id = request.args.get('item_id', type=int)
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+        
+        # Query para itens de estoque
+        items = StockItem.query.order_by(StockItem.name).all()
+        
+        # Query para movimentações de entrada (compras/adicionais)
+        # NOTA: Você precisará criar uma tabela para registrar entradas manualmente
+        # Por enquanto, vamos focar nas saídas via manutenções
+        
+        # Query para movimentações de saída (manutenções)
+        outgoing_query = db.session.query(
+            MaintenancePartUsed.stock_item_id,
+            MaintenancePartUsed.quantity_used,
+            MaintenanceHistory.maintenance_date,
+            Equipment.code.label('equipment_code'),
+            Client.name.label('client_name')
+        ).join(
+            MaintenanceHistory, MaintenancePartUsed.maintenance_history_id == MaintenanceHistory.id
+        ).join(
+            Equipment, MaintenanceHistory.equipment_id == Equipment.id
+        ).join(
+            Client, Equipment.client_id == Client.id
+        )
+        
+        # Aplicar filtros
+        if item_id:
+            outgoing_query = outgoing_query.filter(MaintenancePartUsed.stock_item_id == item_id)
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date >= start_date)
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date <= end_date)
+        
+        outgoing_movements = outgoing_query.order_by(desc(MaintenanceHistory.maintenance_date)).all()
+        
+        # Calcular totais
+        total_withdrawals = sum(mov.quantity_used for mov in outgoing_movements)
+        
+        return render_template('stock_movement_report.html',
+                             items=items,
+                             outgoing_movements=outgoing_movements,
+                             total_withdrawals=total_withdrawals,
+                             filters=request.args)
+    
+
+
     
     @app.route('/history/all')
     @login_required
@@ -1696,6 +1937,119 @@ def register_routes(app):
         except Exception as e:
             flash(f"Erro ao carregar o painel de notificações: {e}", "danger")
             return redirect(url_for('dashboard'))
+        
+
+
+    # --- ROTAS DE GERENCIAMENTO DE ESTOQUE (ADMIN) ---
+    @app.route('/stock')
+    @login_required
+    @admin_required
+    def stock_list():
+        """Exibe a lista de itens em estoque."""
+        items = StockItem.query.order_by(StockItem.name).all()
+        return render_template('stock_list.html', items=items)
+
+    # No método add_stock_item
+    @app.route('/stock/item/new', methods=['GET', 'POST'])
+    @login_required
+    @admin_required
+    def add_stock_item():
+        """Adiciona um novo item ao estoque."""
+        if request.method == 'POST':
+            try:
+                name = request.form.get('name')
+                if not name:
+                    flash('O nome do item é obrigatório.', 'danger')
+                    return render_template('stock_form.html', title="Novo Item de Estoque", item=None, form_data=request.form)
+                if StockItem.query.filter_by(name=name).first():
+                    flash('Já existe um item com este nome.', 'warning')
+                    return render_template('stock_form.html', title="Novo Item de Estoque", item=None, form_data=request.form)
+                
+                # CORREÇÃO: Converter string para booleano
+                requires_tracking_str = request.form.get('requires_tracking')
+                requires_tracking = requires_tracking_str.lower() == 'true' if requires_tracking_str else True
+                
+                new_item = StockItem(
+                    name=name,
+                    sku=request.form.get('sku'),
+                    description=request.form.get('description'),
+                    quantity=int(request.form.get('quantity', 0)),
+                    low_stock_threshold=int(request.form.get('low_stock_threshold', 5)),
+                    unit_cost=float(request.form.get('unit_cost').replace(',', '.')) if request.form.get('unit_cost') else None,
+                    requires_tracking=requires_tracking  # CORREÇÃO
+                )
+                db.session.add(new_item)
+                db.session.commit()
+                flash(f'Item "{name}" adicionado ao estoque com sucesso!', 'success')
+                return redirect(url_for('stock_list'))
+            except (ValueError, TypeError):
+                flash('Valores numéricos inválidos. Verifique Quantidade, Nível de Alerta e Custo.', 'danger')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erro ao adicionar item: {e}', 'danger')
+        return render_template('stock_form.html', title="Novo Item de Estoque", item=None, form_data={})
+
+    # No método edit_stock_item
+    @app.route('/stock/item/edit/<int:item_id>', methods=['GET', 'POST'])
+    @login_required
+    @admin_required
+    def edit_stock_item(item_id):
+        """Edita um item existente no estoque."""
+        item = db.session.get(StockItem, item_id)
+        if not item: abort(404)
+        if request.method == 'POST':
+            try:
+                name = request.form.get('name')
+                if not name:
+                    flash('O nome do item é obrigatório.', 'danger')
+                    return render_template('stock_form.html', title="Editar Item", item=item, form_data=request.form)
+                existing_item = StockItem.query.filter(StockItem.name == name, StockItem.id != item_id).first()
+                if existing_item:
+                    flash('Já existe outro item com este nome.', 'warning')
+                    return render_template('stock_form.html', title="Editar Item", item=item, form_data=request.form)
+
+                # CORREÇÃO: Converter string para booleano
+                requires_tracking_str = request.form.get('requires_tracking')
+                requires_tracking = requires_tracking_str.lower() == 'true' if requires_tracking_str else True
+
+                item.name, item.sku, item.description = name, request.form.get('sku'), request.form.get('description')
+                item.quantity = int(request.form.get('quantity', 0))
+                item.low_stock_threshold = int(request.form.get('low_stock_threshold', 5))
+                item.unit_cost = float(request.form.get('unit_cost').replace(',', '.')) if request.form.get('unit_cost') else None
+                item.requires_tracking = requires_tracking  # CORREÇÃO
+
+                db.session.commit()
+                flash(f'Item "{name}" atualizado com sucesso!', 'success')
+                return redirect(url_for('stock_list'))
+            except (ValueError, TypeError):
+                flash('Valores numéricos inválidos.', 'danger')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erro ao atualizar item: {e}', 'danger')
+        return render_template('stock_form.html', title="Editar Item", item=item, form_data=item.__dict__)
+
+
+
+    @app.route('/stock/item/delete/<int:item_id>', methods=['POST'])
+    @login_required
+    @admin_required
+    def delete_stock_item(item_id):
+        """Deleta um item do estoque."""
+        item = db.session.get(StockItem, item_id)
+        if not item:
+            flash('Item não encontrado.', 'danger')
+            return redirect(url_for('stock_list'))
+        if MaintenancePartUsed.query.filter_by(stock_item_id=item_id).first():
+            flash(f'Não é possível excluir o item "{item.name}", pois ele já foi utilizado em registros de manutenção.', 'danger')
+            return redirect(url_for('stock_list'))
+        try:
+            db.session.delete(item)
+            db.session.commit()
+            flash(f'Item "{item.name}" excluído com sucesso.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao excluir item: {e}', 'danger')
+        return redirect(url_for('stock_list'))
 
 
 

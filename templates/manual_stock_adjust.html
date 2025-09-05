@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Ajuste Manual de Estoque{% endblock %}
+{% block header %}Ajuste Manual de Estoque{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-md max-w-md mx-auto">
+    <div class="flex items-center mb-4">
+        <i class="fas fa-boxes text-2xl text-blue-500 mr-3"></i>
+        <h2 class="text-xl font-semibold text-gray-800">Ajustar: {{ item.name }}</h2>
+    </div>
+
+    <!-- Card com informações atuais -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+                <span class="font-medium text-gray-600">Estoque atual:</span>
+                <span class="block text-2xl font-bold text-blue-700">{{ item.quantity }} unidades</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-600">Custo unitário:</span>
+                <span class="block text-lg text-gray-800">
+                    {{ "R$ %.2f"|format(item.unit_cost) if item.unit_cost else 'N/A' }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST">
+        <div class="space-y-6">
+            <!-- Seletor de operação -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Operação</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center p-3 border-2 border-green-200 rounded-lg cursor-pointer bg-green-50 has-[:checked]:border-green-500 has-[:checked]:bg-green-100">
+                        <input type="radio" name="adjustment_type" value="add" checked class="sr-only peer">
+                        <div class="text-center w-full">
+                            <i class="fas fa-plus-circle text-green-600 text-xl mb-1"></i>
+                            <span class="block text-sm font-medium text-green-800">Entrada</span>
+                            <span class="text-xs text-green-600">Adicionar ao estoque</span>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-center p-3 border-2 border-red-200 rounded-lg cursor-pointer bg-red-50 has-[:checked]:border-red-500 has-[:checked]:bg-red-100">
+                        <input type="radio" name="adjustment_type" value="remove" class="sr-only peer">
+                        <div class="text-center w-full">
+                            <i class="fas fa-minus-circle text-red-600 text-xl mb-1"></i>
+                            <span class="block text-sm font-medium text-red-800">Saída</span>
+                            <span class="text-xs text-red-600">Remover do estoque</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Contador de quantidade -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Quantidade</label>
+                <div class="flex items-center justify-center space-x-3">
+                    <button type="button" onclick="decrementQuantity()" class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    
+                    <input type="number" name="quantity" id="quantityInput" value="1" min="1" 
+                           class="w-20 text-center text-lg font-bold border-2 border-gray-300 rounded-lg py-2">
+                    
+                    <button type="button" onclick="incrementQuantity()" class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Botões de quantidade rápida -->
+            <div class="grid grid-cols-4 gap-2">
+                <button type="button" onclick="setQuantity(1)" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">+1</button>
+                <button type="button" onclick="setQuantity(5)" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">+5</button>
+                <button type="button" onclick="setQuantity(10)" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">+10</button>
+                <button type="button" onclick="setQuantity(25)" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">+25</button>
+            </div>
+
+            <!-- Observações -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Motivo do ajuste</label>
+                <select name="reason" class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3">
+                    <option value="">Selecione um motivo...</option>
+                    <option value="compra">Compra/Reabastecimento</option>
+                    <option value="ajuste">Ajuste de inventário</option>
+                    <option value="danificado">Item danificado/perdido</option>
+                    <option value="uso_interno">Uso interno</option>
+                    <option value="outro">Outro</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Observações (opcional)</label>
+                <textarea name="notes" rows="3" placeholder="Detalhes sobre o ajuste..." class="w-full rounded-md border-gray-300 shadow-sm py-2 px-3"></textarea>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-end gap-3">
+            <a href="{{ url_for('stock_list') }}" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                <i class="fas fa-times mr-2"></i>Cancelar
+            </a>
+            <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                <i class="fas fa-check mr-2"></i>Confirmar Ajuste
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function incrementQuantity() {
+    const input = document.getElementById('quantityInput');
+    input.value = parseInt(input.value) + 1;
+}
+
+function decrementQuantity() {
+    const input = document.getElementById('quantityInput');
+    if (parseInt(input.value) > 1) {
+        input.value = parseInt(input.value) - 1;
+    }
+}
+
+function setQuantity(value) {
+    document.getElementById('quantityInput').value = value;
+}
+
+// Atualizar visualmente quando o tipo de operação mudar
+document.querySelectorAll('input[name="adjustment_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.querySelectorAll('label[class*="bg-"]').forEach(label => {
+            label.classList.remove('border-green-500', 'bg-green-100', 'border-red-500', 'bg-red-100');
+            label.classList.add('border-gray-200', 'bg-gray-50');
+        });
+        
+        if (this.value === 'add') {
+            this.closest('label').classList.add('border-green-500', 'bg-green-100');
+        } else {
+            this.closest('label').classList.add('border-red-500', 'bg-red-100');
+        }
+    });
+});
+
+// Inicializar visual
+document.querySelector('input[name="adjustment_type"]:checked').dispatchEvent(new Event('change'));
+</script>
+
+<style>
+label.has-\[\\:\checked\]\:border-green-500:has(input:checked) {
+    border-color: #10B981;
+    background-color: #D1FAE5;
+}
+
+label.has-\[\\:\checked\]\:border-red-500:has(input:checked) {
+    border-color: #EF4444;
+    background-color: #FEE2E2;
+}
+</style>
+{% endblock %}

@@ -110,7 +110,9 @@ class MaintenanceHistory(db.Model):
     technician_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     # CORREÇÃO: Adicionado o campo de custo
-    cost = db.Column(db.Numeric(10, 2), nullable=True)
+    cost = db.Column(db.Float, nullable=True)
+    parts_used = db.relationship('MaintenancePartUsed', backref='maintenance_record', lazy='dynamic', cascade="all, delete-orphan")
+
     images = db.relationship('MaintenanceImage', backref='maintenance_record', lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -230,3 +232,33 @@ class TimeClock(db.Model):
 
     def __repr__(self):
         return f'<TimeClock {self.id} for User {self.user_id} on {self.date}>'
+    
+
+
+# --- NOVOS MODELOS PARA CONTROLE DE ESTOQUE ---
+
+class StockItem(db.Model):
+    """Modelo para os itens do inventário (peças, insumos)."""
+    __tablename__ = 'stock_item'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False, unique=True)
+    sku = db.Column(db.String(50), nullable=True, unique=True) # Código do item
+    description = db.Column(db.Text, nullable=True)
+    quantity = db.Column(db.Integer, nullable=False, default=0)
+    low_stock_threshold = db.Column(db.Integer, nullable=False, default=5) # Nível para alerta
+    unit_cost = db.Column(db.Numeric(10, 2), nullable=True)
+    requires_tracking = db.Column(db.Boolean, default=True, nullable=False)
+
+    def __repr__(self):
+        return f'<StockItem {self.name}>'
+
+class MaintenancePartUsed(db.Model):
+    """Tabela que registra quais peças e em que quantidade foram usadas em uma manutenção."""
+    __tablename__ = 'maintenance_part_used'
+    id = db.Column(db.Integer, primary_key=True)
+    maintenance_history_id = db.Column(db.Integer, db.ForeignKey('maintenance_history.id'), nullable=False)
+    stock_item_id = db.Column(db.Integer, db.ForeignKey('stock_item.id'), nullable=False)
+    quantity_used = db.Column(db.Integer, nullable=False)
+
+    # Relação para acessar o item de estoque facilmente a partir deste registro
+    item = db.relationship('StockItem')

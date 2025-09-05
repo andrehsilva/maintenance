@@ -4,40 +4,69 @@
 
 {% block content %}
 <div class="bg-white p-6 sm:p-8 rounded-lg shadow-md max-w-3xl mx-auto">
-    <!-- ATUALIZADO: Adicionado enctype para permitir upload de arquivos -->
-    <form method="POST" enctype="multipart/form-data">
+    
+    <form method="POST" enctype="multipart/form-data" id="maintenanceForm">
         <div class="space-y-6">
-            <!-- ... (campos existentes: maintenance_date, category, description, cost) ... -->
+            <!-- Campos existentes -->
             <div>
                 <label for="maintenance_date" class="block text-sm font-medium leading-6 text-gray-900">Data da Manutenção *</label>
                 <div class="mt-2">
-                    <input type="date" name="maintenance_date" id="maintenance_date" value="{{ (history_record.maintenance_date if history_record else now).strftime('%Y-%m-%d') }}" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                    <input type="date" name="maintenance_date" id="maintenance_date" 
+                           value="{{ (history_record.maintenance_date if history_record else now).strftime('%Y-%m-%d') }}" 
+                           required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
                 </div>
             </div>
+            
             <div>
                 <label for="category" class="block text-sm font-medium leading-6 text-gray-900">Categoria *</label>
                 <div class="mt-2">
-                    <select id="category" name="category" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                    <select id="category" name="category" required 
+                            class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
                         {% for cat in categories %}
-                        <option value="{{ cat }}" {% if history_record and history_record.category == cat %}selected{% endif %}>{{ cat }}</option>
+                        <option value="{{ cat }}" 
+                                {% if history_record and history_record.category == cat %}selected{% endif %}>{{ cat }}</option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
+            
             <div>
                 <label for="description" class="block text-sm font-medium leading-6 text-gray-900">Descrição Detalhada *</label>
                 <div class="mt-2">
-                    <textarea id="description" name="description" rows="5" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300" placeholder="Descreva o serviço realizado...">{{ history_record.description if history_record else '' }}</textarea>
+                    <textarea id="description" name="description" rows="5" required 
+                              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300" 
+                              placeholder="Descreva o serviço realizado...">{{ history_record.description if history_record else '' }}</textarea>
                 </div>
             </div>
+            
             <div>
-                <label for="cost" class="block text-sm font-medium leading-6 text-gray-900">Custo (R$)</label>
+                <label for="cost" class="block text-sm font-medium leading-6 text-gray-900">Custo da Mão de Obra (R$)</label>
                 <div class="mt-2">
-                    <input type="text" name="cost" id="cost" value="{{ history_record.cost if history_record and history_record.cost is not none else '' }}" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300" placeholder="Ex: 150.50">
+                    <input type="text" name="cost" id="cost" 
+                           value="{{ history_record.cost if history_record and history_record.cost is not none else '' }}" 
+                           class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300" 
+                           placeholder="Ex: 150,50">
                 </div>
             </div>
 
-            <!-- NOVO: Seção de Upload de Fotos -->
+            <!-- SEÇÃO DE ESTOQUE -->
+            <div class="border-t border-gray-200 pt-6">
+                <h3 class="text-base font-semibold leading-6 text-gray-900">Peças Utilizadas</h3>
+                <p class="mt-1 text-sm text-gray-500">Adicione as peças do estoque usadas neste serviço. A baixa será feita automaticamente.</p>
+                
+                <div id="parts-container" class="mt-4 space-y-4">
+                    <!-- As peças serão inseridas aqui dinamicamente -->
+                </div>
+                
+                <div class="mt-4">
+                    <button type="button" id="add-part-btn" 
+                            class="rounded-md bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-600 shadow-sm hover:bg-indigo-100">
+                        + Adicionar Peça
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Seção de Upload de Fotos -->
             <div>
                 <label class="block text-sm font-medium leading-6 text-gray-900">Adicionar Fotos (até 3)</label>
                 <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
@@ -50,10 +79,9 @@
                             </label>
                             <p class="pl-1">ou arraste e solte</p>
                         </div>
-                        <p class="text-xs leading-5 text-gray-600">PNG, JPG, GIF até 16MB</p>
+                        <p class="text-xs leading-5 text-gray-600">PNG, JPG, GIF</p>
                     </div>
                 </div>
-                <!-- Área de pré-visualização das imagens -->
                 <div id="previews" class="mt-4 grid grid-cols-3 gap-4"></div>
             </div>
         </div>
@@ -64,35 +92,167 @@
         </div>
     </form>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
+// Dados do backend
+const stockItems = {{ stockItems | tojson | safe }};
+const partsUsed = {{ parts_used_json | tojson | safe if parts_used_json else '[]' }};
+
+console.log('Dados carregados:', { stockItems, partsUsed });
+
+// Gerenciador de peças (JavaScript puro)
+class PartsManager {
+    constructor() {
+        this.stockItems = stockItems || [];
+        this.parts = [];
+        this.container = document.getElementById('parts-container');
+        this.addBtn = document.getElementById('add-part-btn');
+        
+        this.init();
+    }
+    
+    init() {
+        console.log('Inicializando PartsManager...');
+        console.log('Stock items disponíveis:', this.stockItems);
+        
+        // Configurar eventos
+        this.addBtn.addEventListener('click', () => this.addPart());
+        
+        // Se estiver editando, carrega as peças já usadas
+        if (Array.isArray(partsUsed) && partsUsed.length > 0) {
+            this.parts = [...partsUsed];
+            console.log('Carregando peças existentes:', this.parts);
+        } else {
+            // Inicia com uma peça vazia
+            this.addPart();
+        }
+        
+        this.renderParts();
+    }
+    
+    addPart() {
+        console.log('Adicionando nova peça...');
+        
+        const newPart = {
+            stock_item_id: '',
+            quantity_used: 1
+        };
+        
+        this.parts.push(newPart);
+        console.log('Peças após adicionar:', this.parts);
+        
+        this.renderParts();
+    }
+    
+    removePart(index) {
+        console.log('Removendo peça no índice:', index);
+        
+        if (this.parts.length > 1) {
+            this.parts.splice(index, 1);
+        } else {
+            // Se for a última peça, apenas limpa os valores
+            this.parts[0] = { stock_item_id: '', quantity_used: 1 };
+        }
+        
+        console.log('Peças após remoção:', this.parts);
+        this.renderParts();
+    }
+    
+    renderParts() {
+        console.log('Renderizando peças...', this.parts);
+        
+        this.container.innerHTML = '';
+        
+        this.parts.forEach((part, index) => {
+            const partDiv = this.createPartElement(part, index);
+            this.container.appendChild(partDiv);
+        });
+    }
+    
+    createPartElement(part, index) {
+        const div = document.createElement('div');
+        div.className = 'flex items-end gap-x-4 p-4 bg-gray-50 rounded-lg border';
+        
+        // Opções do select
+        let optionsHtml = '<option value="">Selecione uma peça...</option>';
+        this.stockItems.forEach(item => {
+            const selected = item.id == part.stock_item_id ? 'selected' : '';
+            optionsHtml += `<option value="${item.id}" ${selected}>${item.name} (${item.quantity} disp.)</option>`;
+        });
+        
+        div.innerHTML = `
+            <div class="flex-grow">
+                <label class="block text-sm font-medium text-gray-700">Item</label>
+                <select name="part_ids" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+                        onchange="partsManager.updatePartValue(${index}, 'stock_item_id', this.value)">
+                    ${optionsHtml}
+                </select>
+            </div>
+            
+            <div class="w-24">
+                <label class="block text-sm font-medium text-gray-700">Qtd.</label>
+                <input type="number" name="part_quantities" value="${part.quantity_used}" min="1" 
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                       onchange="partsManager.updatePartValue(${index}, 'quantity_used', parseInt(this.value))">
+            </div>
+            
+            <button type="button" onclick="partsManager.removePart(${index})" 
+                    class="flex-shrink-0 rounded-md bg-red-50 p-2 text-red-600 hover:bg-red-100" 
+                    title="Remover Peça">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `;
+        
+        return div;
+    }
+    
+    updatePartValue(index, field, value) {
+        console.log(`Atualizando parte ${index}, campo ${field} para:`, value);
+        this.parts[index][field] = value;
+    }
+}
+
+// Inicializar quando a página carregar
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM carregado, inicializando sistemas...');
+    
+    // Inicializar gerenciador de peças
+    window.partsManager = new PartsManager();
+    
+    // Configurar preview de imagens
     const photoInput = document.getElementById('photos');
     const previewsContainer = document.getElementById('previews');
-
-    photoInput.addEventListener('change', (event) => {
-        previewsContainer.innerHTML = ''; // Limpa previews antigos
-        const files = event.target.files;
-
-        if (files.length > 3) {
-            alert('Você só pode selecionar no máximo 3 fotos.');
-            photoInput.value = ''; // Limpa a seleção
-            return;
-        }
-
-        Array.from(files).forEach(file => {
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const imgContainer = document.createElement('div');
-                    imgContainer.className = 'relative';
-                    imgContainer.innerHTML = `<img src="${e.target.result}" class="rounded-lg object-cover h-24 w-full">`;
-                    previewsContainer.appendChild(imgContainer);
-                };
-                reader.readAsDataURL(file);
+    
+    if (photoInput && previewsContainer) {
+        photoInput.addEventListener('change', (event) => {
+            console.log('Arquivos selecionados:', event.target.files);
+            previewsContainer.innerHTML = '';
+            const files = event.target.files;
+            
+            if (files.length > 3) {
+                alert('Você só pode selecionar no máximo 3 fotos.');
+                photoInput.value = '';
+                return;
             }
+            
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const imgContainer = document.createElement('div');
+                        imgContainer.className = 'relative';
+                        imgContainer.innerHTML = `<img src="${e.target.result}" class="rounded-lg object-cover h-24 w-full">`;
+                        previewsContainer.appendChild(imgContainer);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
         });
-    });
+    }
+    
+    console.log('Inicialização completa!');
 });
 </script>
 {% endblock %}

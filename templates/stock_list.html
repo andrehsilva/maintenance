@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Gestão de Estoque{% endblock %}
+{% block header %}Gestão de Estoque{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-md rounded-lg overflow-hidden">
+    <div class="p-4 sm:p-6 border-b border-gray-200">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex-auto">
+                <h2 class="text-lg font-semibold text-gray-800">Inventário de Peças e Insumos</h2>
+                <p class="mt-1 text-sm text-gray-600">Gerencie todos os itens do seu estoque.</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex-shrink-0">
+                <a href="{{ url_for('add_stock_item') }}" class="w-full justify-center inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+                    <i class="fas fa-plus mr-2"></i>Adicionar Novo Item
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase">Item</th>
+                    <th class="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase">Quantidade</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase">Custo Unit.</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase">Tipo</th>
+                    <th class="relative px-6 py-3"><span class="sr-only">Ações</span></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for item in items %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <p class="text-sm font-medium text-gray-900">{{ item.name }}</p>
+                        <p class="text-xs text-gray-500">{{ item.sku or 'Sem SKU' }}</p>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        {% if item.quantity <= 0 %}
+                            <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-bold text-red-800">Esgotado</span>
+                        {% elif item.quantity <= item.low_stock_threshold %}
+                            <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-bold text-yellow-800">{{ item.quantity }}</span>
+                        {% else %}
+                            <span class="text-sm font-medium text-gray-800">{{ item.quantity }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        {{ ("R$ %.2f"|format(item.unit_cost)) if item.unit_cost is not none else 'N/A' }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        {% if item.requires_tracking %}
+                            <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">Automático</span>
+                        {% else %}
+                            <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">Manual</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                        <a href="{{ url_for('edit_stock_item', item_id=item.id) }}" class="text-indigo-600 hover:text-indigo-900" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% if not item.requires_tracking %}
+                        <a href="{{ url_for('manual_stock_adjust', item_id=item.id) }}" class="text-blue-600 hover:text-blue-900" title="Ajustar Estoque">
+                            <i class="fas fa-exchange-alt"></i>
+                        </a>
+                        {% endif %}
+                        <form action="{{ url_for('delete_stock_item', item_id=item.id) }}" method="POST" class="inline">
+                            <button type="submit" class="text-red-600 hover:text-red-900" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir este item?')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                        <i class="fas fa-box-open text-4xl text-gray-300 mb-2"></i>
+                        <p class="text-sm">Nenhum item cadastrado no estoque.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal de Ajuste Rápido (opcional) -->
+<div id="quickAdjustModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded-lg shadow-xl w-96">
+        <h3 class="text-lg font-semibold mb-4">Ajuste Rápido de Estoque</h3>
+        <form id="quickAdjustForm" method="POST">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Tipo de Ajuste</label>
+                    <select name="adjustment_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                        <option value="add">Adicionar ao Estoque</option>
+                        <option value="remove">Remover do Estoque</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Quantidade</label>
+                    <input type="number" name="quantity" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 rounded-md">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Confirmar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.hover\:bg-gray-50:hover {
+    background-color: #f9fafb;
+}
+</style>
+
+<script>
+function openQuickAdjust(itemId, itemName) {
+    document.getElementById('quickAdjustForm').action = `/stock/quick-adjust/${itemId}`;
+    document.getElementById('quickAdjustModal').querySelector('h3').textContent = `Ajuste: ${itemName}`;
+    document.getElementById('quickAdjustModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('quickAdjustModal').classList.add('hidden');
+}
+
+// Fechar modal ao clicar fora
+document.getElementById('quickAdjustModal').addEventListener('click', function(e) {
+    if (e.target.id === 'quickAdjustModal') {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
+    <form method="POST">
+        <div class="space-y-6">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-800">Nome do Item *</label>
+                <input type="text" id="name" name="name" value="{{ form_data.get('name', '') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <p class="text-xs text-gray-500 mt-1">Ex: Filtro de Ar, Gás R410A (Kg), Parafuso 1/4".</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="sku" class="block text-sm font-medium text-gray-800">SKU / Código</label>
+                    <input type="text" id="sku" name="sku" value="{{ form_data.get('sku', '') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="quantity" class="block text-sm font-medium text-gray-800">Quantidade Inicial *</label>
+                    <input type="number" id="quantity" name="quantity" value="{{ form_data.get('quantity', 0) }}" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-800">Descrição</label>
+                <textarea id="description" name="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ form_data.get('description', '') }}</textarea>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="low_stock_threshold" class="block text-sm font-medium text-gray-800">Nível Mínimo para Alerta *</label>
+                    <input type="number" id="low_stock_threshold" name="low_stock_threshold" value="{{ form_data.get('low_stock_threshold', 5) }}" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="unit_cost" class="block text-sm font-medium text-gray-800">Custo Unitário (R$)</label>
+                    <input type="text" id="unit_cost" name="unit_cost" value="{{ '%.2f'|format(form_data.get('unit_cost')) if form_data.get('unit_cost') is not none else '' }}" placeholder="Ex: 150,50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+                        <!-- Adicione este campo no formulário de estoque -->
+            <div class="sm:col-span-2">
+                <label for="requires_tracking" class="block text-sm font-medium leading-6 text-gray-900">
+                    Requer controle automático?
+                </label>
+                <div class="mt-2">
+                    <select id="requires_tracking" name="requires_tracking" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                        <option value="true" {% if (item and item.requires_tracking) or not item %}selected{% endif %}>Sim (baixa automática em manutenções)</option>
+                        <option value="false" {% if item and not item.requires_tracking %}selected{% endif %}>Não (apenas ajuste manual)</option>
+                    </select>
+                </div>
+                <p class="mt-1 text-sm text-gray-500">Itens como "material de limpeza" podem não precisar de vinculação com manutenções.</p>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-end gap-x-4">
+            <a href="{{ url_for('stock_list') }}" class="rounded-md bg-white px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                {{ 'Atualizar Item' if item else 'Salvar Item' }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
