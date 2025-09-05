@@ -1,61 +1,101 @@
 {% extends "base.html" %}
+
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
+<div class="bg-white p-6 sm:p-8 rounded-xl shadow-lg border border-gray-200 max-w-3xl mx-auto">
+    <div class="mb-6 border-b border-gray-200 pb-4">
+        <h2 class="text-xl font-bold leading-7 text-gray-900">Detalhes do Item</h2>
+        <p class="mt-1 text-sm leading-6 text-gray-500">Preencha as informações do item para gerenciar seu inventário.</p>
+    </div>
+
     <form method="POST">
-        <div class="space-y-6">
+        <div class="space-y-8">
+            <!-- Nome do Item -->
             <div>
-                <label for="name" class="block text-sm font-medium text-gray-800">Nome do Item *</label>
-                <input type="text" id="name" name="name" value="{{ form_data.get('name', '') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                <p class="text-xs text-gray-500 mt-1">Ex: Filtro de Ar, Gás R410A (Kg), Parafuso 1/4".</p>
+                <label for="name" class="block text-sm font-semibold leading-6 text-gray-900">Nome do Item *</label>
+                <div class="relative mt-2 rounded-md shadow-sm">
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <i class="fas fa-tag text-gray-400"></i>
+                    </div>
+                    <input type="text" id="name" name="name" value="{{ form_data.get('name', '') }}" required class="block w-full rounded-md border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Filtro...">
+                </div>
+                <p class="mt-2 text-xs text-gray-500">Ex: Gás R410A (Kg), Parafuso 1/4", Óleo para Motor.</p>
             </div>
 
+            <!-- SKU e Quantidade -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="sku" class="block text-sm font-medium text-gray-800">SKU / Código</label>
-                    <input type="text" id="sku" name="sku" value="{{ form_data.get('sku', '') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <label for="sku" class="block text-sm font-semibold leading-6 text-gray-900">SKU / Código</label>
+                    <div class="relative mt-2 rounded-md shadow-sm">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <i class="fas fa-barcode text-gray-400"></i>
+                        </div>
+                        <input type="text" id="sku" name="sku" value="{{ form_data.get('sku', '') }}" class="block w-full rounded-md border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="F-AR-001">
+                    </div>
                 </div>
                 <div>
-                    <label for="quantity" class="block text-sm font-medium text-gray-800">Quantidade Inicial *</label>
-                    <input type="number" id="quantity" name="quantity" value="{{ form_data.get('quantity', 0) }}" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <label for="quantity" class="block text-sm font-semibold leading-6 text-gray-900">Quantidade Inicial *</label>
+                    <div class="relative mt-2 rounded-md shadow-sm">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                           <i class="fas fa-boxes-stacked text-gray-400"></i>
+                        </div>
+                        <input type="number" id="quantity" name="quantity" value="{{ form_data.get('quantity', 0) }}" required min="0" class="block w-full rounded-md border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                    </div>
                 </div>
             </div>
 
+            <!-- Descrição -->
             <div>
-                <label for="description" class="block text-sm font-medium text-gray-800">Descrição</label>
-                <textarea id="description" name="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ form_data.get('description', '') }}</textarea>
+                <label for="description" class="block text-sm font-semibold leading-6 text-gray-900">Descrição</label>
+                <div class="mt-2">
+                    <textarea id="description" name="description" rows="3" class="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">{{ form_data.get('description', '') }}</textarea>
+                </div>
             </div>
             
+            <!-- Nível Mínimo e Custo -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="low_stock_threshold" class="block text-sm font-medium text-gray-800">Nível Mínimo para Alerta *</label>
-                    <input type="number" id="low_stock_threshold" name="low_stock_threshold" value="{{ form_data.get('low_stock_threshold', 5) }}" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <label for="low_stock_threshold" class="block text-sm font-semibold leading-6 text-gray-900">Nível Mínimo para Alerta *</label>
+                    <div class="relative mt-2 rounded-md shadow-sm">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                           <i class="fas fa-triangle-exclamation text-gray-400"></i>
+                        </div>
+                        <input type="number" id="low_stock_threshold" name="low_stock_threshold" value="{{ form_data.get('low_stock_threshold', 5) }}" required min="0" class="block w-full rounded-md border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                    </div>
                 </div>
                 <div>
-                    <label for="unit_cost" class="block text-sm font-medium text-gray-800">Custo Unitário (R$)</label>
-                    <input type="text" id="unit_cost" name="unit_cost" value="{{ '%.2f'|format(form_data.get('unit_cost')) if form_data.get('unit_cost') is not none else '' }}" placeholder="Ex: 150,50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <label for="unit_cost" class="block text-sm font-semibold leading-6 text-gray-900">Custo Unitário (R$)</label>
+                     <div class="relative mt-2 rounded-md shadow-sm">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                           <span class="text-gray-500 sm:text-sm">R$</span>
+                        </div>
+                        <input type="text" id="unit_cost" name="unit_cost" value="{{ '%.2f'|format(form_data.get('unit_cost')) if form_data.get('unit_cost') is not none else '' }}" placeholder="150,50" class="block w-full rounded-md border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                    </div>
                 </div>
             </div>
-                        <!-- Adicione este campo no formulário de estoque -->
-            <div class="sm:col-span-2">
-                <label for="requires_tracking" class="block text-sm font-medium leading-6 text-gray-900">
+
+            <!-- Controle Automático -->
+            <div>
+                <label for="requires_tracking" class="block text-sm font-semibold leading-6 text-gray-900">
                     Requer controle automático?
                 </label>
                 <div class="mt-2">
-                    <select id="requires_tracking" name="requires_tracking" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                    <select id="requires_tracking" name="requires_tracking" class="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
                         <option value="true" {% if (item and item.requires_tracking) or not item %}selected{% endif %}>Sim (baixa automática em manutenções)</option>
-                        <option value="false" {% if item and not item.requires_tracking %}selected{% endif %}>Não (apenas ajuste manual)</option>
+                        <option value="false" {% if item and not item.requires_tracking %}selected{% endif %}>Não (apenas ajuste manual de estoque)</option>
                     </select>
                 </div>
-                <p class="mt-1 text-sm text-gray-500">Itens como "material de limpeza" podem não precisar de vinculação com manutenções.</p>
+                <p class="mt-2 text-xs text-gray-500">Itens como "material de limpeza" ou "luvas" podem não precisar de vinculação com manutenções específicas.</p>
             </div>
         </div>
 
-        <div class="mt-8 flex justify-end gap-x-4">
-            <a href="{{ url_for('stock_list') }}" class="rounded-md bg-white px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancelar</a>
-            <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+        <!-- Botões de Ação -->
+        <div class="mt-8 pt-6 border-t border-gray-200 flex items-center justify-end gap-x-4">
+            <a href="{{ url_for('stock_list') }}" class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                <i class="fas fa-check-circle -ml-0.5 h-5 w-5"></i>
                 {{ 'Atualizar Item' if item else 'Salvar Item' }}
             </button>
         </div>
