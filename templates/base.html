@@ -17,6 +17,21 @@
       .text-primary-600 { color: var(--cor-primaria); }
       .bg-primary-600 { background-color: var(--cor-primaria); }
       [x-cloak] { display: none !important; }
+
+      /* --- CORREÇÃO ADICIONADA AQUI --- */
+      /* Adiciona um preenchimento horizontal (padding) em todos os campos de formulário */
+      input[type="text"],
+      input[type="email"],
+      input[type="password"],
+      input[type="date"],
+      input[type="number"],
+      select,
+      textarea {
+        padding-left: 0.75rem; /* 12px */
+        padding-right: 0.75rem; /* 12px */
+      }
+      /* --- FIM DA CORREÇÃO --- */
+
     </style>
 
     {% block head %}{% endblock %}
@@ -71,7 +86,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- NOVO MENU DE ESTOQUE -->
                                     <a href="{{ url_for('stock_list') }}" class="{% if request.endpoint.startswith('stock_') %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Estoque</a>
                                    
                                     <div x-data="{ open: false }" class="relative">
@@ -172,7 +186,6 @@
                     <a href="{{ url_for('new_equipment') }}" class="{% if request.endpoint == 'new_equipment' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Cadastrar</a>
                     <a href="{{ url_for('archived_list') }}" class="{% if request.endpoint == 'archived_list' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Ver Arquivados</a>
                     
-                    <!-- MENU ESTOQUE MOBILE -->
                     <div class="border-t border-gray-700 my-2"></div>
                     <a href="{{ url_for('stock_list') }}" class="{% if request.endpoint.startswith('stock_') %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Estoque</a>
 
