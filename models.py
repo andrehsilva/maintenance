@@ -245,6 +245,7 @@ class StockItem(db.Model):
     __tablename__ = 'stock_item'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False, unique=True)
+    category = db.Column(db.String(100), nullable=False)
     sku = db.Column(db.String(50), nullable=True, unique=True) # Código do item
     description = db.Column(db.Text, nullable=True)
     quantity = db.Column(db.Integer, nullable=False, default=0)
