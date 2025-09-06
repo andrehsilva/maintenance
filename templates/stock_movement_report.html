@@ -4,7 +4,6 @@
 
 {% block content %}
 <div class="space-y-8">
-    <!-- Filtros -->
     <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md">
         <h2 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-4">Filtros do Relatório</h2>
         <form method="GET" action="{{ url_for('stock_movement_report') }}" class="mt-4">
@@ -41,9 +40,13 @@
                 </div>
             </div>
         </form>
+        <div class="mt-4 text-right">
+            <a id="download-excel-btn" href="{{ url_for('export_stock_movement') }}" class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700">
+                <i class="fas fa-file-excel mr-2"></i>Download Excel
+            </a>
+        </div>
     </div>
 
-    <!-- Resumo -->
     <div class="bg-white shadow-md rounded-lg overflow-hidden">
         <div class="p-4 sm:p-6">
             <h2 class="text-lg font-semibold text-gray-800">Resumo da Movimentação</h2>
@@ -71,7 +74,6 @@
         </div>
     </div>
 
-    <!-- Tabela de Movimentações -->
     <div class="bg-white shadow-md rounded-lg overflow-hidden">
         <div class="p-4 sm:p-6">
             <h2 class="text-lg font-semibold text-gray-800">Movimentações de Saída (Manutenções)</h2>
@@ -122,7 +124,6 @@
         </div>
     </div>
 
-    <!-- Estoque Atual -->
     <div class="bg-white shadow-md rounded-lg overflow-hidden">
         <div class="p-4 sm:p-6">
             <h2 class="text-lg font-semibold text-gray-800">Situação Atual do Estoque</h2>
@@ -179,4 +180,16 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const downloadBtn = document.getElementById('download-excel-btn');
+        if (downloadBtn) {
+            const currentParams = new URLSearchParams(window.location.search);
+            downloadBtn.href = "{{ url_for('export_stock_movement') }}?" + currentParams.toString();
+        }
+    });
+</script>
 {% endblock %}

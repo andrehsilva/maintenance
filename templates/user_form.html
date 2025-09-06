@@ -7,11 +7,33 @@
     <form method="POST">
         <div class="space-y-6">
             <div>
-                <label for="username" class="block text-sm font-medium leading-6 text-gray-900">Nome de Usuário *</label>
+                <label for="name" class="block text-sm font-medium leading-6 text-gray-900">Nome Completo *</label>
+                <div class="mt-2">
+                    <input type="text" name="name" id="name" value="{{ user.name if user else form_data.name or '' }}" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                </div>
+            </div>
+
+            <div>
+                <label for="username" class="block text-sm font-medium leading-6 text-gray-900">Nome de Usuário (para login) *</label>
                 <div class="mt-2">
                     <input type="text" name="username" id="username" value="{{ user.username if user else form_data.username or '' }}" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
                 </div>
             </div>
+
+            <div>
+                <label for="email" class="block text-sm font-medium leading-6 text-gray-900">Email *</label>
+                <div class="mt-2">
+                    <input type="email" name="email" id="email" value="{{ user.email if user else form_data.email or '' }}" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                </div>
+            </div>
+
+            <div>
+                <label for="cpf" class="block text-sm font-medium leading-6 text-gray-900">CPF *</label>
+                <div class="mt-2">
+                    <input type="text" name="cpf" id="cpf" value="{{ user.cpf if user else form_data.cpf or '' }}" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
+                </div>
+            </div>
+            
             <div>
                 <label for="password" class="block text-sm font-medium leading-6 text-gray-900">Senha {% if not user %}*{% endif %}</label>
                 <div class="mt-2">
@@ -21,12 +43,13 @@
                 <p class="mt-1 text-xs text-gray-500">Deixe em branco para não alterar a senha.</p>
                 {% endif %}
             </div>
+            
             <div>
                 <label for="role" class="block text-sm font-medium leading-6 text-gray-900">Função (Role) *</label>
                 <div class="mt-2">
                     <select name="role" id="role" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300">
-                        <option value="technician" {% if user and user.role == 'technician' %}selected{% endif %}>Técnico</option>
-                        <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Administrador</option>
+                        <option value="technician" {% if (user and user.role == 'technician') or (form_data.role == 'technician') %}selected{% endif %}>Técnico</option>
+                        <option value="admin" {% if (user and user.role == 'admin') or (form_data.role == 'admin') %}selected{% endif %}>Administrador</option>
                     </select>
                 </div>
             </div>

@@ -48,6 +48,11 @@
                 </div>
             </div>
         </form>
+        <div class="mt-4 text-right">
+            <a id="download-excel-btn" href="{{ url_for('export_financial') }}" class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700">
+                <i class="fas fa-file-excel mr-2"></i>Download Excel
+            </a>
+        </div>
     </div>
 
     <div class="bg-white shadow-md rounded-lg overflow-hidden">
@@ -106,4 +111,16 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const downloadBtn = document.getElementById('download-excel-btn');
+        if (downloadBtn) {
+            const currentParams = new URLSearchParams(window.location.search);
+            downloadBtn.href = "{{ url_for('export_financial') }}?" + currentParams.toString();
+        }
+    });
+</script>
 {% endblock %}

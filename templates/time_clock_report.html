@@ -25,6 +25,12 @@
             </div>
         </div>
     </form>
+    
+    <div class="mt-4 text-right">
+        <a id="download-excel-btn" href="{{ url_for('export_time_clock') }}" class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700">
+            <i class="fas fa-file-excel mr-2"></i>Download Excel
+        </a>
+    </div>
 
     <div class="mt-6 bg-gray-50 p-4 rounded-lg">
         <dl class="overflow-hidden rounded-lg bg-white shadow">
@@ -72,4 +78,16 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const downloadBtn = document.getElementById('download-excel-btn');
+        if (downloadBtn) {
+            const currentParams = new URLSearchParams(window.location.search);
+            downloadBtn.href = "{{ url_for('export_time_clock') }}?" + currentParams.toString();
+        }
+    });
+</script>
 {% endblock %}

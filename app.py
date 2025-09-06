@@ -202,7 +202,7 @@ def register_routes(app):
     @admin_required
     def user_list():
         """Exibe uma lista de todos os usuários."""
-        users = User.query.order_by(User.username).all()
+        users = User.query.order_by(User.name).all() # Ordenar por nome
         return render_template('user_list.html', users=users)
 
     @app.route('/user/new', methods=['GET', 'POST'])
@@ -212,22 +212,42 @@ def register_routes(app):
         """Cria um novo usuário (admin ou técnico)."""
         if request.method == 'POST':
             username = request.form.get('username')
+            name = request.form.get('name')
+            email = request.form.get('email')
+            cpf = request.form.get('cpf')
             password = request.form.get('password')
             role = request.form.get('role')
 
-            if not username or not password or not role:
-                flash('Todos os campos são obrigatórios.', 'danger')
-                return render_template('user_form.html', title="Criar Novo Usuário", user=None)
+            if not all([username, name, email, cpf, password, role]):
+                flash('Todos os campos marcados com * são obrigatórios.', 'danger')
+                return render_template('user_form.html', title="Criar Novo Usuário", user=None, form_data=request.form)
 
-            if User.query.filter_by(username=username).first():
-                flash('Este nome de usuário já está em uso.', 'warning')
+            # Verifica se username, email ou cpf já existem
+            existing_user = User.query.filter(
+                or_(User.username == username, User.email == email, User.cpf == cpf)
+            ).first()
+            if existing_user:
+                if existing_user.username == username:
+                    flash('Este nome de usuário já está em uso.', 'warning')
+                elif existing_user.email == email:
+                    flash('Este e-mail já está cadastrado.', 'warning')
+                elif existing_user.cpf == cpf:
+                    flash('Este CPF já está cadastrado.', 'warning')
                 return render_template('user_form.html', title="Criar Novo Usuário", user=None, form_data=request.form)
             
-            new_user = User(username=username, role=role)
+            # Cria o novo usuário com todos os campos
+            new_user = User(
+                username=username, 
+                name=name, 
+                email=email, 
+                cpf=cpf, 
+                role=role,
+                is_active=True # Admin criando usuário já o torna ativo
+            )
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
-            flash(f'Usuário "{username}" criado com sucesso!', 'success')
+            flash(f'Usuário "{name}" criado com sucesso!', 'success')
             return redirect(url_for('user_list'))
             
         return render_template('user_form.html', title="Criar Novo Usuário", user=None, form_data={})
@@ -242,26 +262,42 @@ def register_routes(app):
             
         if request.method == 'POST':
             username = request.form.get('username')
+            name = request.form.get('name')
+            email = request.form.get('email')
+            cpf = request.form.get('cpf')
             password = request.form.get('password') # Senha é opcional na edição
             role = request.form.get('role')
 
-            # Verifica se o novo username já está em uso por outro usuário
-            existing_user = User.query.filter(User.username == username, User.id != user_id).first()
+            # Verifica se os dados únicos já estão em uso por OUTRO usuário
+            existing_user = User.query.filter(
+                User.id != user_id,
+                or_(User.username == username, User.email == email, User.cpf == cpf)
+            ).first()
             if existing_user:
-                flash('Este nome de usuário já está em uso por outra conta.', 'warning')
+                if existing_user.username == username:
+                    flash('Este nome de usuário já está em uso por outra conta.', 'warning')
+                elif existing_user.email == email:
+                    flash('Este e-mail já está em uso por outra conta.', 'warning')
+                elif existing_user.cpf == cpf:
+                    flash('Este CPF já está em uso por outra conta.', 'warning')
                 return render_template('user_form.html', title="Editar Usuário", user=user, form_data=request.form)
 
             user.username = username
+            user.name = name
+            user.email = email
+            user.cpf = cpf
             user.role = role
             # Só atualiza a senha se uma nova for fornecida
             if password:
                 user.set_password(password)
             
             db.session.commit()
-            flash(f'Usuário "{username}" atualizado com sucesso!', 'success')
+            flash(f'Usuário "{name}" atualizado com sucesso!', 'success')
             return redirect(url_for('user_list'))
 
         return render_template('user_form.html', title="Editar Usuário", user=user, form_data=user.__dict__)
+
+
 
     @app.route('/user/delete/<int:user_id>', methods=['POST'])
     @login_required
@@ -440,23 +476,48 @@ def register_routes(app):
 
     # Em app.py
 
+    # DENTRO DA FUNÇÃO register_routes(app):
     @app.route('/register', methods=['GET', 'POST'])
     def register():
         if current_user.is_authenticated:
             return redirect(url_for('dashboard'))
         if request.method == 'POST':
             username = request.form.get('username')
+            name = request.form.get('name')
+            email = request.form.get('email')
+            cpf = request.form.get('cpf')
             password = request.form.get('password')
 
-            if User.query.filter_by(username=username).first():
-                flash('Este nome de usuário já existe.', 'warning')
+            # Validação de campos
+            if not all([username, name, email, cpf, password]):
+                 flash('Todos os campos são obrigatórios.', 'danger')
+                 return redirect(url_for('register'))
+
+            # Verifica se username, email ou cpf já existem
+            existing_user = User.query.filter(
+                or_(User.username == username, User.email == email, User.cpf == cpf)
+            ).first()
+            if existing_user:
+                if existing_user.username == username:
+                    flash('Este nome de usuário já existe.', 'warning')
+                elif existing_user.email == email:
+                    flash('Este e-mail já está cadastrado.', 'warning')
+                elif existing_user.cpf == cpf:
+                    flash('Este CPF já está cadastrado.', 'warning')
                 return redirect(url_for('register'))
 
             # O primeiro usuário é admin E ativo. Os demais começam inativos.
             is_first_user = User.query.count() == 0
             role = 'admin' if is_first_user else 'technician'
 
-            new_user = User(username=username, role=role, is_active=is_first_user)
+            new_user = User(
+                username=username,
+                name=name,
+                email=email,
+                cpf=cpf,
+                role=role, 
+                is_active=is_first_user
+            )
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
@@ -465,7 +526,7 @@ def register_routes(app):
                 flash('Conta de administrador criada com sucesso! Faça o login.', 'success')
             else:
                 # Notifica os admins sobre o novo registro pendente
-                msg = f"Novo usuário '{username}' se registrou e aguarda aprovação."
+                msg = f"Novo usuário '{name}' se registrou e aguarda aprovação."
                 notify_admins(msg, url_for('user_list'))
                 db.session.commit()
                 flash('Conta criada com sucesso! Aguardando aprovação do administrador.', 'info')
@@ -2050,8 +2111,195 @@ def register_routes(app):
             db.session.rollback()
             flash(f'Erro ao excluir item: {e}', 'danger')
         return redirect(url_for('stock_list'))
+    
 
 
+     ### NOVAS ROTAS DE EXPORTAÇÃO ADICIONADAS AQUI ###
+
+    @app.route('/export/financial')
+    @login_required
+    @admin_required
+    def export_financial():
+        """Gera um arquivo Excel com o relatório financeiro filtrado."""
+        try:
+            client_id = request.args.get('client_id', type=int)
+            equipment_id = request.args.get('equipment_id', type=int)
+            start_date_str = request.args.get('start_date')
+            end_date_str = request.args.get('end_date')
+
+            query = db.session.query(MaintenanceHistory).join(Equipment).options(
+                joinedload(MaintenanceHistory.equipment).joinedload(Equipment.client)
+            )
+
+            if client_id:
+                query = query.filter(Equipment.client_id == client_id)
+            if equipment_id:
+                query = query.filter(MaintenanceHistory.equipment_id == equipment_id)
+            if start_date_str:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                query = query.filter(MaintenanceHistory.maintenance_date >= start_date)
+            if end_date_str:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                query = query.filter(MaintenanceHistory.maintenance_date <= end_date)
+
+            records = query.order_by(desc(MaintenanceHistory.maintenance_date)).all()
+
+            data_for_df = [{
+                'Data': record.maintenance_date.strftime('%d/%m/%Y'),
+                'Equipamento (Código)': record.equipment.code,
+                'Equipamento (Modelo)': record.equipment.model,
+                'Cliente': record.equipment.client.name,
+                'Custo (R$)': float(record.cost) if record.cost else 0.0
+            } for record in records]
+
+            df = pd.DataFrame(data_for_df)
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='Financeiro')
+            output.seek(0)
+            
+            timestamp = datetime.now(FUSO_HORARIO_SP).strftime("%Y-%m-%d")
+            return send_file(
+                output, as_attachment=True,
+                download_name=f'relatorio_financeiro_{timestamp}.xlsx',
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        except Exception as e:
+            flash(f"Erro ao gerar o relatório Excel: {e}", "danger")
+            return redirect(url_for('financial_report'))
+
+    @app.route('/export/time-clock')
+    @login_required
+    @admin_required
+    def export_time_clock():
+        """Gera um arquivo Excel com o relatório de ponto filtrado."""
+        try:
+            tech_id = request.args.get('technician_id', type=int)
+            month_str = request.args.get('month', datetime.now().strftime('%Y-%m'))
+            year, month = map(int, month_str.split('-'))
+
+            query = TimeClock.query.options(joinedload(TimeClock.technician))
+            if tech_id:
+                query = query.filter(TimeClock.user_id == tech_id)
+            query = query.filter(
+                extract('year', TimeClock.date) == year,
+                extract('month', TimeClock.date) == month
+            )
+            records = query.order_by(desc(TimeClock.date), TimeClock.user_id).all()
+
+            data_for_df = [{
+                'Data': record.date.strftime('%d/%m/%Y'),
+                'Técnico': record.technician.username,
+                'Entrada Manhã': format_datetime_local(record.morning_check_in, '%H:%M') if record.morning_check_in else '-',
+                'Saída Manhã': format_datetime_local(record.morning_check_out, '%H:%M') if record.morning_check_out else '-',
+                'Entrada Tarde': format_datetime_local(record.afternoon_check_in, '%H:%M') if record.afternoon_check_in else '-',
+                'Saída Tarde': format_datetime_local(record.afternoon_check_out, '%H:%M') if record.afternoon_check_out else '-',
+                'Total Horas': record.total_hours
+            } for record in records]
+
+            df = pd.DataFrame(data_for_df)
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name=f'Ponto_{month_str}')
+            output.seek(0)
+            
+            timestamp = datetime.now(FUSO_HORARIO_SP).strftime("%Y-%m-%d")
+            return send_file(
+                output, as_attachment=True,
+                download_name=f'relatorio_ponto_{month_str}_{timestamp}.xlsx',
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        except Exception as e:
+            flash(f"Erro ao gerar o relatório Excel: {e}", "danger")
+            return redirect(url_for('time_clock_report'))
+
+    # ... (resto do seu código app.py) ...
+
+    @app.route('/export/stock-movement')
+    @login_required
+    @admin_required
+    def export_stock_movement():
+        """
+        Gera um arquivo Excel com a movimentação de estoque (filtrada) 
+        e a situação atual do estoque (completa).
+        """
+        try:
+            # --- 1. LÓGICA PARA A ABA DE MOVIMENTAÇÕES (CÓDIGO EXISTENTE) ---
+            item_id = request.args.get('item_id', type=int)
+            start_date_str = request.args.get('start_date')
+            end_date_str = request.args.get('end_date')
+            
+            items_dict = {item.id: item.name for item in StockItem.query.all()}
+            
+            outgoing_query = db.session.query(
+                MaintenancePartUsed, MaintenanceHistory, Equipment, Client
+            ).select_from(MaintenancePartUsed).join(
+                MaintenanceHistory, MaintenancePartUsed.maintenance_history_id == MaintenanceHistory.id
+            ).join(
+                Equipment, MaintenanceHistory.equipment_id == Equipment.id
+            ).join(
+                Client, Equipment.client_id == Client.id
+            )
+            
+            if item_id:
+                outgoing_query = outgoing_query.filter(MaintenancePartUsed.stock_item_id == item_id)
+            if start_date_str:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date >= start_date)
+            if end_date_str:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date <= end_date)
+            
+            movements = outgoing_query.order_by(desc(MaintenanceHistory.maintenance_date)).all()
+    
+            movements_data = [{
+                'Data': mov.MaintenanceHistory.maintenance_date.strftime('%d/%m/%Y'),
+                'Item': items_dict.get(mov.MaintenancePartUsed.stock_item_id, 'Desconhecido'),
+                'Quantidade Retirada': mov.MaintenancePartUsed.quantity_used,
+                'Equipamento': mov.Equipment.code,
+                'Cliente': mov.Client.name
+            } for mov in movements]
+            df_movements = pd.DataFrame(movements_data)
+    
+            # --- 2. NOVA LÓGICA PARA A ABA DE ESTOQUE ATUAL ---
+            all_items = StockItem.query.order_by(StockItem.name).all()
+            stock_status_data = []
+            for item in all_items:
+                # Lógica para definir o status do item
+                if item.quantity <= item.low_stock_threshold:
+                    status = 'Crítico'
+                elif item.quantity <= item.low_stock_threshold * 2:
+                    status = 'Atenção'
+                else:
+                    status = 'Normal'
+                
+                stock_status_data.append({
+                    'Item': item.name,
+                    'SKU': item.sku,
+                    'Estoque Atual': item.quantity,
+                    'Nível de Alerta': item.low_stock_threshold,
+                    'Custo Unitário (R$)': float(item.unit_cost) if item.unit_cost else 0.0,
+                    'Status': status
+                })
+            df_stock_status = pd.DataFrame(stock_status_data)
+    
+            # --- 3. GERAR O ARQUIVO EXCEL COM AS DUAS ABAS ---
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df_stock_status.to_excel(writer, index=False, sheet_name='Estoque Atual')
+                df_movements.to_excel(writer, index=False, sheet_name='Movimentações')
+            output.seek(0)
+    
+            timestamp = datetime.now(FUSO_HORARIO_SP).strftime("%Y-%m-%d")
+            return send_file(
+                output, as_attachment=True,
+                download_name=f'relatorio_estoque_{timestamp}.xlsx',
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        except Exception as e:
+            flash(f"Erro ao gerar o relatório Excel: {e}", "danger")
+            return redirect(url_for('stock_movement_report'))
+    
 
 
 # --- Registro de Comandos CLI ---

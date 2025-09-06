@@ -23,7 +23,10 @@ class User(UserMixin, db.Model):
     """Modelo para os usuários (operadores)."""
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)# --- CAMPOS ADICIONADOS ---
+    name = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    cpf = db.Column(db.String(14), unique=True, nullable=False) # Armazenado como string para manter a formatação
     role = db.Column(db.String(20), nullable=False, default='technician')
     is_active = db.Column(db.Boolean, default=False, nullable=False)
     equipments = db.relationship('Equipment', backref='operator', lazy=True)
