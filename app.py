@@ -169,6 +169,8 @@ def register_routes(app):
     # Em app.py, dentro de register_routes(app)
     MAINTENANCE_CATEGORIES = ['Instalação','Manutenção Preventiva', 'Manutenção Corretiva', 'Manutenção Proativa']
 
+    STOCK_CATEGORIES = sorted(['Peças de Reposição', 'Ferramentas', 'Consumíveis', 'EPIs', 'Material de Limpeza', 'Geral'])
+
     # Em app.py, adicione esta nova rota
 
     @app.route('/')
@@ -1100,61 +1102,7 @@ def register_routes(app):
         return redirect(url_for('stock_list'))
 
 
-    @app.route('/reports/stock-movement')
-    @login_required
-    @admin_required
-    def stock_movement_report():
-        """Relatório completo de movimentação de estoque."""
-        # Filtros
-        item_id = request.args.get('item_id', type=int)
-        start_date_str = request.args.get('start_date')
-        end_date_str = request.args.get('end_date')
-        
-        # Query para itens de estoque
-        items = StockItem.query.order_by(StockItem.name).all()
-        
-        # Query para movimentações de entrada (compras/adicionais)
-        # NOTA: Você precisará criar uma tabela para registrar entradas manualmente
-        # Por enquanto, vamos focar nas saídas via manutenções
-        
-        # Query para movimentações de saída (manutenções)
-        outgoing_query = db.session.query(
-            MaintenancePartUsed.stock_item_id,
-            MaintenancePartUsed.quantity_used,
-            MaintenanceHistory.maintenance_date,
-            Equipment.code.label('equipment_code'),
-            Client.name.label('client_name')
-        ).join(
-            MaintenanceHistory, MaintenancePartUsed.maintenance_history_id == MaintenanceHistory.id
-        ).join(
-            Equipment, MaintenanceHistory.equipment_id == Equipment.id
-        ).join(
-            Client, Equipment.client_id == Client.id
-        )
-        
-        # Aplicar filtros
-        if item_id:
-            outgoing_query = outgoing_query.filter(MaintenancePartUsed.stock_item_id == item_id)
-        if start_date_str:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date >= start_date)
-        if end_date_str:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date <= end_date)
-        
-        outgoing_movements = outgoing_query.order_by(desc(MaintenanceHistory.maintenance_date)).all()
-        
-        # Calcular totais
-        total_withdrawals = sum(mov.quantity_used for mov in outgoing_movements)
-        
-        return render_template('stock_movement_report.html',
-                             items=items,
-                             outgoing_movements=outgoing_movements,
-                             total_withdrawals=total_withdrawals,
-                             filters=request.args)
     
-
-
     
     @app.route('/history/all')
     @login_required
@@ -2002,92 +1950,278 @@ def register_routes(app):
 
 
     # --- ROTAS DE GERENCIAMENTO DE ESTOQUE (ADMIN) ---
+    
     @app.route('/stock')
     @login_required
     @admin_required
     def stock_list():
-        """Exibe a lista de itens em estoque."""
-        items = StockItem.query.order_by(StockItem.name).all()
-        return render_template('stock_list.html', items=items)
+        """
+        Exibe a lista de itens em estoque, agora com filtros por categoria.
+        """
+        category_filter = request.args.get('category')
 
-    # No método add_stock_item
+        query = StockItem.query
+
+        if category_filter:
+            query = query.filter(StockItem.category == category_filter)
+
+        items = query.order_by(StockItem.name).all()
+        
+        return render_template('stock_list.html',
+                               items=items,
+                               categories=STOCK_CATEGORIES,
+                               filters=request.args)
+
     @app.route('/stock/item/new', methods=['GET', 'POST'])
     @login_required
     @admin_required
     def add_stock_item():
-        """Adiciona um novo item ao estoque."""
+        """
+        Adiciona um novo item ao estoque, incluindo o campo de categoria.
+        """
         if request.method == 'POST':
             try:
                 name = request.form.get('name')
-                if not name:
-                    flash('O nome do item é obrigatório.', 'danger')
-                    return render_template('stock_form.html', title="Novo Item de Estoque", item=None, form_data=request.form)
+                category = request.form.get('category')
+
+                if not name or not category:
+                    flash('Nome e Categoria do item são obrigatórios.', 'danger')
+                    return render_template('stock_form.html', title="Novo Item de Estoque", item=None, categories=STOCK_CATEGORIES, form_data=request.form)
+                
                 if StockItem.query.filter_by(name=name).first():
                     flash('Já existe um item com este nome.', 'warning')
-                    return render_template('stock_form.html', title="Novo Item de Estoque", item=None, form_data=request.form)
+                    return render_template('stock_form.html', title="Novo Item de Estoque", item=None, categories=STOCK_CATEGORIES, form_data=request.form)
                 
-                # CORREÇÃO: Converter string para booleano
                 requires_tracking_str = request.form.get('requires_tracking')
                 requires_tracking = requires_tracking_str.lower() == 'true' if requires_tracking_str else True
                 
                 new_item = StockItem(
                     name=name,
+                    category=category,
                     sku=request.form.get('sku'),
                     description=request.form.get('description'),
                     quantity=int(request.form.get('quantity', 0)),
                     low_stock_threshold=int(request.form.get('low_stock_threshold', 5)),
                     unit_cost=float(request.form.get('unit_cost').replace(',', '.')) if request.form.get('unit_cost') else None,
-                    requires_tracking=requires_tracking  # CORREÇÃO
+                    requires_tracking=requires_tracking
                 )
                 db.session.add(new_item)
                 db.session.commit()
                 flash(f'Item "{name}" adicionado ao estoque com sucesso!', 'success')
                 return redirect(url_for('stock_list'))
+                
             except (ValueError, TypeError):
                 flash('Valores numéricos inválidos. Verifique Quantidade, Nível de Alerta e Custo.', 'danger')
             except Exception as e:
                 db.session.rollback()
                 flash(f'Erro ao adicionar item: {e}', 'danger')
-        return render_template('stock_form.html', title="Novo Item de Estoque", item=None, form_data={})
+        
+        return render_template('stock_form.html', title="Novo Item de Estoque", item=None, categories=STOCK_CATEGORIES, form_data={})
 
-    # No método edit_stock_item
     @app.route('/stock/item/edit/<int:item_id>', methods=['GET', 'POST'])
     @login_required
     @admin_required
     def edit_stock_item(item_id):
-        """Edita um item existente no estoque."""
+        """
+        Edita um item existente no estoque, incluindo o campo de categoria.
+        """
         item = db.session.get(StockItem, item_id)
-        if not item: abort(404)
+        if not item:
+            abort(404)
+        
         if request.method == 'POST':
             try:
                 name = request.form.get('name')
-                if not name:
-                    flash('O nome do item é obrigatório.', 'danger')
-                    return render_template('stock_form.html', title="Editar Item", item=item, form_data=request.form)
+                category = request.form.get('category')
+
+                if not name or not category:
+                    flash('Nome e Categoria do item são obrigatórios.', 'danger')
+                    return render_template('stock_form.html', title="Editar Item", item=item, categories=STOCK_CATEGORIES, form_data=request.form)
+
                 existing_item = StockItem.query.filter(StockItem.name == name, StockItem.id != item_id).first()
                 if existing_item:
                     flash('Já existe outro item com este nome.', 'warning')
-                    return render_template('stock_form.html', title="Editar Item", item=item, form_data=request.form)
+                    return render_template('stock_form.html', title="Editar Item", item=item, categories=STOCK_CATEGORIES, form_data=request.form)
 
-                # CORREÇÃO: Converter string para booleano
                 requires_tracking_str = request.form.get('requires_tracking')
                 requires_tracking = requires_tracking_str.lower() == 'true' if requires_tracking_str else True
 
-                item.name, item.sku, item.description = name, request.form.get('sku'), request.form.get('description')
+                item.name = name
+                item.category = category
+                item.sku = request.form.get('sku')
+                item.description = request.form.get('description')
                 item.quantity = int(request.form.get('quantity', 0))
                 item.low_stock_threshold = int(request.form.get('low_stock_threshold', 5))
                 item.unit_cost = float(request.form.get('unit_cost').replace(',', '.')) if request.form.get('unit_cost') else None
-                item.requires_tracking = requires_tracking  # CORREÇÃO
+                item.requires_tracking = requires_tracking
 
                 db.session.commit()
                 flash(f'Item "{name}" atualizado com sucesso!', 'success')
                 return redirect(url_for('stock_list'))
+                
             except (ValueError, TypeError):
                 flash('Valores numéricos inválidos.', 'danger')
             except Exception as e:
                 db.session.rollback()
                 flash(f'Erro ao atualizar item: {e}', 'danger')
-        return render_template('stock_form.html', title="Editar Item", item=item, form_data=item.__dict__)
+        
+        return render_template('stock_form.html', title="Editar Item", item=item, categories=STOCK_CATEGORIES, form_data=item.__dict__)
+
+    # --- ROTA DE RELATÓRIO DE ESTOQUE ATUALIZADA ---
+    @app.route('/reports/stock-movement')
+    @login_required
+    @admin_required
+    def stock_movement_report():
+        """Relatório de movimentação de estoque, agora com filtro de categoria."""
+        item_id = request.args.get('item_id', type=int)
+        category_filter = request.args.get('category')
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+        
+        items_query = StockItem.query
+        if category_filter:
+            items_query = items_query.filter(StockItem.category == category_filter)
+        items = items_query.order_by(StockItem.name).all()
+
+        outgoing_query = db.session.query(
+            MaintenancePartUsed, MaintenanceHistory, Equipment, Client
+        ).select_from(MaintenancePartUsed).join(
+            MaintenanceHistory, MaintenancePartUsed.maintenance_history_id == MaintenanceHistory.id
+        ).join(
+            Equipment, MaintenanceHistory.equipment_id == Equipment.id
+        ).join(
+            Client, Equipment.client_id == Client.id
+        ).join(
+            StockItem, MaintenancePartUsed.stock_item_id == StockItem.id
+        )
+        
+        if item_id:
+            outgoing_query = outgoing_query.filter(MaintenancePartUsed.stock_item_id == item_id)
+        if category_filter:
+            outgoing_query = outgoing_query.filter(StockItem.category == category_filter)
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date >= start_date)
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date <= end_date)
+        
+        all_movements = outgoing_query.order_by(desc(MaintenanceHistory.maintenance_date)).all()
+        
+        # Mapeamento para evitar múltiplas queries no template
+        outgoing_movements_data = []
+        for mov in all_movements:
+            outgoing_movements_data.append({
+                'maintenance_date': mov.MaintenanceHistory.maintenance_date,
+                'stock_item_id': mov.MaintenancePartUsed.stock_item_id,
+                'quantity_used': mov.MaintenancePartUsed.quantity_used,
+                'equipment_code': mov.Equipment.code,
+                'client_name': mov.Client.name
+            })
+            
+        total_withdrawals = sum(mov['quantity_used'] for mov in outgoing_movements_data)
+        
+        return render_template('stock_movement_report.html',
+                             items=items,
+                             outgoing_movements=outgoing_movements_data,
+                             total_withdrawals=total_withdrawals,
+                             categories=STOCK_CATEGORIES,
+                             filters=request.args)
+
+    # --- ROTA DE EXPORTAÇÃO DE ESTOQUE ATUALIZADA ---
+    @app.route('/export/stock-movement')
+    @login_required
+    @admin_required
+    def export_stock_movement():
+        """Gera um arquivo Excel com a movimentação e o status atual do estoque, respeitando filtros."""
+        try:
+            item_id = request.args.get('item_id', type=int)
+            category_filter = request.args.get('category')
+            start_date_str = request.args.get('start_date')
+            end_date_str = request.args.get('end_date')
+            
+            # --- ABA DE MOVIMENTAÇÕES ---
+            items_dict = {item.id: (item.name, item.category) for item in StockItem.query.all()}
+            
+            outgoing_query = db.session.query(
+                MaintenancePartUsed, MaintenanceHistory, Equipment, Client
+            ).select_from(MaintenancePartUsed).join(
+                MaintenanceHistory, MaintenancePartUsed.maintenance_history_id == MaintenanceHistory.id
+            ).join(
+                Equipment, MaintenanceHistory.equipment_id == Equipment.id
+            ).join(
+                Client, Equipment.client_id == Client.id
+            ).join(
+                StockItem, MaintenancePartUsed.stock_item_id == StockItem.id
+            )
+            
+            if item_id:
+                outgoing_query = outgoing_query.filter(MaintenancePartUsed.stock_item_id == item_id)
+            if category_filter:
+                outgoing_query = outgoing_query.filter(StockItem.category == category_filter)
+            if start_date_str:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date >= start_date)
+            if end_date_str:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date <= end_date)
+            
+            movements = outgoing_query.order_by(desc(MaintenanceHistory.maintenance_date)).all()
+
+            movements_data = [{
+                'Data': mov.MaintenanceHistory.maintenance_date.strftime('%d/%m/%Y'),
+                'Item': items_dict.get(mov.MaintenancePartUsed.stock_item_id, ('Desconhecido', ''))[0],
+                'Categoria': items_dict.get(mov.MaintenancePartUsed.stock_item_id, ('', 'Desconhecida'))[1],
+                'Quantidade Retirada': mov.MaintenancePartUsed.quantity_used,
+                'Equipamento': mov.Equipment.code,
+                'Cliente': mov.Client.name
+            } for mov in movements]
+            df_movements = pd.DataFrame(movements_data)
+
+            # --- ABA DE ESTOQUE ATUAL ---
+            stock_query = StockItem.query
+            if category_filter:
+                stock_query = stock_query.filter(StockItem.category == category_filter)
+            all_items = stock_query.order_by(StockItem.name).all()
+            
+            stock_status_data = []
+            for item in all_items:
+                if item.quantity <= item.low_stock_threshold:
+                    status = 'Crítico'
+                elif item.quantity <= item.low_stock_threshold * 2:
+                    status = 'Atenção'
+                else:
+                    status = 'Normal'
+                
+                stock_status_data.append({
+                    'Item': item.name,
+                    'Categoria': item.category,
+                    'SKU': item.sku,
+                    'Estoque Atual': item.quantity,
+                    'Nível de Alerta': item.low_stock_threshold,
+                    'Custo Unitário (R$)': float(item.unit_cost) if item.unit_cost else 0.0,
+                    'Status': status
+                })
+            df_stock_status = pd.DataFrame(stock_status_data)
+
+            # --- GERAR O ARQUIVO EXCEL ---
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df_stock_status.to_excel(writer, index=False, sheet_name='Estoque Atual')
+                df_movements.to_excel(writer, index=False, sheet_name='Movimentações')
+            output.seek(0)
+
+            timestamp = datetime.now(FUSO_HORARIO_SP).strftime("%Y-%m-%d")
+            return send_file(
+                output, as_attachment=True,
+                download_name=f'relatorio_estoque_{timestamp}.xlsx',
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        except Exception as e:
+            flash(f"Erro ao gerar o relatório Excel: {e}", "danger")
+            return redirect(url_for('stock_movement_report'))
+
+    # ... (resto das suas rotas, como register_commands()) ...
 
 
 
@@ -2215,91 +2349,6 @@ def register_routes(app):
 
     # ... (resto do seu código app.py) ...
 
-    @app.route('/export/stock-movement')
-    @login_required
-    @admin_required
-    def export_stock_movement():
-        """
-        Gera um arquivo Excel com a movimentação de estoque (filtrada) 
-        e a situação atual do estoque (completa).
-        """
-        try:
-            # --- 1. LÓGICA PARA A ABA DE MOVIMENTAÇÕES (CÓDIGO EXISTENTE) ---
-            item_id = request.args.get('item_id', type=int)
-            start_date_str = request.args.get('start_date')
-            end_date_str = request.args.get('end_date')
-            
-            items_dict = {item.id: item.name for item in StockItem.query.all()}
-            
-            outgoing_query = db.session.query(
-                MaintenancePartUsed, MaintenanceHistory, Equipment, Client
-            ).select_from(MaintenancePartUsed).join(
-                MaintenanceHistory, MaintenancePartUsed.maintenance_history_id == MaintenanceHistory.id
-            ).join(
-                Equipment, MaintenanceHistory.equipment_id == Equipment.id
-            ).join(
-                Client, Equipment.client_id == Client.id
-            )
-            
-            if item_id:
-                outgoing_query = outgoing_query.filter(MaintenancePartUsed.stock_item_id == item_id)
-            if start_date_str:
-                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-                outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date >= start_date)
-            if end_date_str:
-                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-                outgoing_query = outgoing_query.filter(MaintenanceHistory.maintenance_date <= end_date)
-            
-            movements = outgoing_query.order_by(desc(MaintenanceHistory.maintenance_date)).all()
-    
-            movements_data = [{
-                'Data': mov.MaintenanceHistory.maintenance_date.strftime('%d/%m/%Y'),
-                'Item': items_dict.get(mov.MaintenancePartUsed.stock_item_id, 'Desconhecido'),
-                'Quantidade Retirada': mov.MaintenancePartUsed.quantity_used,
-                'Equipamento': mov.Equipment.code,
-                'Cliente': mov.Client.name
-            } for mov in movements]
-            df_movements = pd.DataFrame(movements_data)
-    
-            # --- 2. NOVA LÓGICA PARA A ABA DE ESTOQUE ATUAL ---
-            all_items = StockItem.query.order_by(StockItem.name).all()
-            stock_status_data = []
-            for item in all_items:
-                # Lógica para definir o status do item
-                if item.quantity <= item.low_stock_threshold:
-                    status = 'Crítico'
-                elif item.quantity <= item.low_stock_threshold * 2:
-                    status = 'Atenção'
-                else:
-                    status = 'Normal'
-                
-                stock_status_data.append({
-                    'Item': item.name,
-                    'SKU': item.sku,
-                    'Estoque Atual': item.quantity,
-                    'Nível de Alerta': item.low_stock_threshold,
-                    'Custo Unitário (R$)': float(item.unit_cost) if item.unit_cost else 0.0,
-                    'Status': status
-                })
-            df_stock_status = pd.DataFrame(stock_status_data)
-    
-            # --- 3. GERAR O ARQUIVO EXCEL COM AS DUAS ABAS ---
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                df_stock_status.to_excel(writer, index=False, sheet_name='Estoque Atual')
-                df_movements.to_excel(writer, index=False, sheet_name='Movimentações')
-            output.seek(0)
-    
-            timestamp = datetime.now(FUSO_HORARIO_SP).strftime("%Y-%m-%d")
-            return send_file(
-                output, as_attachment=True,
-                download_name=f'relatorio_estoque_{timestamp}.xlsx',
-                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-        except Exception as e:
-            flash(f"Erro ao gerar o relatório Excel: {e}", "danger")
-            return redirect(url_for('stock_movement_report'))
-    
 
 
 # --- Registro de Comandos CLI ---
