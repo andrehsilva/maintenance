@@ -83,7 +83,7 @@
                         </a>
                         
                         {% if not item.requires_tracking %}
-                        <button type="button" onclick="openQuickAdjust({{ item.id }}, {{ item.name|tojson }})" class="text-green-600 hover:text-green-900" title="Ajuste Rápido">
+                        <button type="button" onclick='openQuickAdjust({{ item.id }}, {{ item.name|tojson }}, {{ item.quantity }})' class="text-green-600 hover:text-green-900" title="Ajuste Rápido">
                             <i class="fas fa-wrench"></i>
                         </button>
                         {% endif %}
@@ -110,45 +110,69 @@
 
 <div id="quickAdjustModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
     <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-        <h3 class="text-lg font-semibold mb-4 text-gray-900" id="modalItemName">Ajuste Rápido</h3>
+        <h3 class="text-lg font-semibold text-gray-900" id="modalItemName">Ajuste Rápido</h3>
+        <p class="text-sm text-gray-500 mb-4">Estoque atual: <span id="modalCurrentStock" class="font-bold"></span></p>
+        
         <form id="quickAdjustForm" method="POST">
             <div class="space-y-4">
                 <div>
-                    <label for="adjustment_type" class="block text-sm font-medium text-gray-700">Tipo de Ajuste</label>
+                    <label for="adjustment_type" class="block text-sm font-medium text-gray-700">Ação</label>
                     <select name="adjustment_type" id="adjustment_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
                         <option value="add">Adicionar ao Estoque</option>
                         <option value="remove">Remover do Estoque</option>
                     </select>
                 </div>
                 <div>
-                    <label for="quantity" class="block text-sm font-medium text-gray-700">Quantidade</label>
-                    <input type="number" name="quantity" id="quantity" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    <label for="quantity" class="block text-sm font-medium text-gray-700">Quantidade a ser ajustada</label>
+                    <div class="mt-1 flex rounded-md shadow-sm">
+                        <button type="button" onclick="adjustQuantity(-10)" class="relative inline-flex items-center rounded-l-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-600 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">-10</button>
+                        <button type="button" onclick="adjustQuantity(-1)" class="relative -ml-px inline-flex items-center bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-600 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">-1</button>
+                        <input type="number" name="quantity" id="quantity_input" min="1" value="1" class="block w-full text-center border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required>
+                        <button type="button" onclick="adjustQuantity(1)" class="relative -ml-px inline-flex items-center bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-600 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">+1</button>
+                        <button type="button" onclick="adjustQuantity(10)" class="relative -ml-px inline-flex items-center rounded-r-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-600 ring-1 ring-inset ring-gray-300 hover:bg-gray-200">+10</button>
+                    </div>
                 </div>
             </div>
             <div class="mt-6 flex justify-end gap-3">
-                <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Confirmar Ajuste</button>
+                <button type="button" onclick="closeModal()" class="px-4 py-2 bg-white text-gray-900 rounded-md ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700">Confirmar Ajuste</button>
             </div>
         </form>
     </div>
 </div>
 {% endblock %}
 
-
 {% block scripts %}
 <script>
-function openQuickAdjust(itemId, itemName) {
+// Abre o modal e preenche com os dados do item
+function openQuickAdjust(itemId, itemName, currentQuantity) {
     const modal = document.getElementById('quickAdjustModal');
     const form = document.getElementById('quickAdjustForm');
     const modalTitle = document.getElementById('modalItemName');
+    const currentStockEl = document.getElementById('modalCurrentStock');
     
     form.action = `{{ url_for('quick_stock_adjust', item_id=0) }}`.replace('0', itemId);
     modalTitle.textContent = `Ajuste Rápido: ${itemName}`;
+    currentStockEl.textContent = currentQuantity;
+    document.getElementById('quantity_input').value = 1; // Reseta para 1
     modal.classList.remove('hidden');
 }
 
+// Fecha o modal
 function closeModal() {
     document.getElementById('quickAdjustModal').classList.add('hidden');
+}
+
+// Nova função para os botões de +/-
+function adjustQuantity(amount) {
+    const quantityInput = document.getElementById('quantity_input');
+    let currentValue = parseInt(quantityInput.value, 10);
+    if (isNaN(currentValue)) {
+        currentValue = 0;
+    }
+    const newValue = currentValue + amount;
+    // Impede que a quantidade seja menor que 1
+    quantityInput.value = Math.max(1, newValue);
 }
 
 // Opcional: Fechar modal ao clicar fora
