@@ -34,7 +34,7 @@
                 <label for="description" class="block text-sm font-medium leading-6 text-gray-900">Descrição Detalhada *</label>
                 <div class="mt-2">
                     <textarea id="description" name="description" rows="5" required 
-                              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300" 
+                              class="block w-full px-3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300" 
                               placeholder="Descreva o serviço realizado...">{{ history_record.description if history_record else '' }}</textarea>
                 </div>
             </div>
@@ -44,7 +44,7 @@
                 <div class="mt-2">
                     <input type="text" name="cost" id="cost" 
                            value="{{ history_record.cost if history_record and history_record.cost is not none else '' }}" 
-                           class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300" 
+                           class="block w-full px-3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300" 
                            placeholder="Ex: 150,50">
                 </div>
             </div>
