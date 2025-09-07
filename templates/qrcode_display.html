@@ -22,7 +22,7 @@
         
         <div class="mt-6 flex justify-center">
             <!-- CORREÇÃO: A imagem agora é gerada usando 'equipment.code' -->
-            <img src="{{ url_for('qrcode_image', code=equipment.code) }}" alt="QR Code para o equipamento {{ equipment.code }}" class="w-64 h-64">
+            <img src="{{ url_for('qrcode.qrcode_image', code=equipment.code) }}" alt="QR Code para o equipamento {{ equipment.code }}" class="w-64 h-64">
         </div>
 
         <p class="mt-6 text-xs text-gray-400">
@@ -34,7 +34,7 @@
         <button onclick="window.print()" class="w-full justify-center inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
             <i class="fas fa-print mr-2"></i>Imprimir QR Code
         </button>
-        <a href="{{ url_for('dashboard') }}" class="mt-2 block text-sm text-gray-600 hover:underline">Voltar ao Dashboard</a>
+        <a href="{{ url_for('core.dashboard') }}" class="mt-2 block text-sm text-gray-600 hover:underline">Voltar ao Dashboard</a>
     </div>
 </div>
 {% endblock %}

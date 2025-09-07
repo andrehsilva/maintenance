@@ -22,7 +22,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ client.name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ client.contact_person or 'N/A' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <form action="{{ url_for('toggle_archive_client', client_id=client.id) }}" method="POST" class="inline">
+                        <form action="{{ url_for('clients.toggle_archive_client', client_id=client.id) }}" method="POST" class="inline">
                             <button type="submit" class="text-green-600 hover:text-green-900" title="Restaurar">
                                 <i class="fas fa-undo-alt mr-1"></i>Restaurar
                             </button>

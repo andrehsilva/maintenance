@@ -31,8 +31,8 @@
                 <span class="text-2xl font-bold text-gray-800">Sacada<span class="text-indigo-600">Gear</span></span>
             </a>
             <div class="flex items-center space-x-4">
-                <a href="{{ url_for('login') }}" class="text-gray-600 hover:text-indigo-600 hidden sm:block">Login</a>
-                <a href="{{ url_for('lead_form') }}" class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg shadow-indigo-500/20">
+                <a href="{{ url_for('auth.login') }}" class="text-gray-600 hover:text-indigo-600 hidden sm:block">Login</a>
+                <a href="{{ url_for('.leads.lead_form') }}" class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg shadow-indigo-500/20">
                     Agendar demonstração
                 </a>
             </div>
@@ -51,7 +51,7 @@
                 <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600">
                     Centralize a gestão de clientes, equipes, estoque, agenda de serviços e finanças para tomar decisões mais inteligentes e focar no que realmente importa.</p>
                 <div class="mt-10">
-                    <a href="{{ url_for('lead_form') }}" class="inline-block px-8 py-4 text-lg font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-2xl shadow-indigo-500/40">
+                    <a href="{{ url_for('leads.lead_form') }}" class="inline-block px-8 py-4 text-lg font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-2xl shadow-indigo-500/40">
                         Quero organizar minha empresa
                     </a>
                 </div>
@@ -163,7 +163,7 @@
                     Agende uma demonstração rápida e sem compromisso. Veja em 15 minutos como o SacadaGear pode transformar seu negócio.
                 </p>
                 <div class="mt-8">
-                    <a href="{{ url_for('lead_form') }}" class="inline-block px-8 py-4 text-lg font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-2xl shadow-indigo-500/40">
+                    <a href="{{ url_for('leads.lead_form') }}" class="inline-block px-8 py-4 text-lg font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-2xl shadow-indigo-500/40">
                         Sim, quero uma demonstração
                     </a>
                 </div>

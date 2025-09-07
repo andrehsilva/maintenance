@@ -5,9 +5,8 @@
 
 {% block content %}
 <div class="space-y-8">
-    <!-- Seção de cards de status -->
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <a href="{{ url_for('dashboard') }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
+        <a href="{{ url_for('core.dashboard') }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
             <div class="overflow-hidden rounded-lg bg-white shadow {% if not active_filter %}border-2 border-indigo-500{% else %}border border-transparent{% endif %}">
                 <div class="p-5">
                     <div class="flex items-center">
@@ -22,7 +21,7 @@
                 </div>
             </div>
         </a>
-        <a href="{{ url_for('dashboard', status='em_dia') }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
+        <a href="{{ url_for('core.dashboard', status='em_dia') }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
             <div class="overflow-hidden rounded-lg bg-white shadow {% if active_filter == 'em_dia' %}border-2 border-green-500{% else %}border border-transparent{% endif %}">
                 <div class="p-5">
                     <div class="flex items-center">
@@ -37,7 +36,7 @@
                 </div>
             </div>
         </a>
-        <a href="{{ url_for('dashboard', status='proximo') }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
+        <a href="{{ url_for('core.dashboard', status='proximo') }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
             <div class="overflow-hidden rounded-lg bg-white shadow {% if active_filter == 'proximo' %}border-2 border-yellow-500{% else %}border border-transparent{% endif %}">
                 <div class="p-5">
                     <div class="flex items-center">
@@ -52,7 +51,7 @@
                 </div>
             </div>
         </a>
-        <a href="{{ url_for('dashboard', status='vencido') }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
+        <a href="{{ url_for('core.dashboard', status='vencido') }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
             <div class="overflow-hidden rounded-lg bg-white shadow {% if active_filter == 'vencido' %}border-2 border-red-500{% else %}border border-transparent{% endif %}">
                 <div class="p-5">
                     <div class="flex items-center">
@@ -69,7 +68,6 @@
         </a>
     </div>
 
-    <!-- Seção de equipamentos -->
     <div>
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 mt-8">
             <div class="flex-auto">
@@ -93,10 +91,9 @@
                 {% for equipment in equipments.items %}
                 <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <!-- Coluna de Informações Principais -->
                         <div class="md:col-span-2">
                             <div class="flex items-center gap-4">
-                                <a href="{{ url_for('equipment_history', equipment_id=equipment.id) }}" class="text-lg font-bold text-gray-900 hover:text-indigo-600 transition-colors duration-200">
+                                <a href="{{ url_for('equipment.equipment_history', equipment_id=equipment.id) }}" class="text-lg font-bold text-gray-900 hover:text-indigo-600 transition-colors duration-200">
                                     {{ equipment.code }} - {{ equipment.model }}
                                 </a>
                                 {% if equipment.status == 'Em dia' %}
@@ -107,35 +104,37 @@
                                 <span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">Vencido</span>
                                 {% endif %}
                             </div>
-                            <p class="text-sm text-gray-600 mt-2 flex flex-wrap gap-x-2">
+                            <div class="mt-2 text-sm text-gray-600 flex flex-wrap items-center gap-2">
                                 <span><i class="fas fa-building mr-1 text-gray-400"></i>{{ equipment.client.name }}</span>
-                                <span class="text-gray-300">|</span>
-                                <span>
-                                    <i class="fas fa-map-marker-alt mr-1 text-gray-400"></i>
-                                    {% if equipment.client.address %}
-                                        <a href="https://www.google.com/maps/search/?api=1&query={{ (equipment.client.address + ' ' + equipment.location)|urlencode }}" target="_blank" class="hover:text-indigo-600 hover:underline">
-                                            {{ equipment.location }}
-                                        </a>
-                                    {% else %}
-                                        {{ equipment.location }}
-                                    {% endif %}
-                                </span>
-                            </p>
-                             <p class="text-sm text-gray-600 mt-1 flex flex-wrap gap-x-2 items-center">
-                                <span><i class="fas fa-user fa-fw mr-1 text-gray-400"></i>{{ equipment.client.contact_person or 'N/A' }}</span>
                                 <span class="text-gray-300 hidden sm:inline">|</span>
-                                <span class="flex items-center">
-                                    <i class="fas fa-phone fa-fw mr-1 text-gray-400"></i> 
-                                    {% if equipment.client.phone %}
-                                        {% set cleaned_phone = equipment.client.phone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '') %}
-                                        <a href="https://wa.me/55{{ cleaned_phone }}" target="_blank" class="text-green-600 hover:text-green-800 hover:underline">
-                                            {{ equipment.client.phone }}
-                                        </a>
-                                    {% else %}
-                                        <span>N/A</span>
-                                    {% endif %}
-                                </span>
-                            </p>
+                                <span><i class="fas fa-user fa-fw mr-1 text-gray-400"></i>{{ equipment.client.contact_person or 'N/A' }}</span>
+                            </div>
+                            <div class="mt-2 flex flex-wrap items-center gap-2">
+                                {% if equipment.client.address %}
+                                    <a href="https://maps.google.com/?q={{ (equipment.client.address + ' ' + equipment.location)|urlencode }}" target="_blank" class="inline-flex items-center gap-x-1.5 rounded-md bg-blue-500 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
+                                        <i class="fas fa-map-marker-alt fa-fw"></i>
+                                        {{ equipment.location }}
+                                    </a>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-x-1.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                                        <i class="fas fa-map-marker-alt fa-fw"></i>
+                                        {{ equipment.location }}
+                                    </span>
+                                {% endif %}
+
+                                {% if equipment.client.phone %}
+                                    {% set cleaned_phone = equipment.client.phone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '') %}
+                                    <a href="https://wa.me/55{{ cleaned_phone }}" target="_blank" class="inline-flex items-center gap-x-1.5 rounded-md bg-green-500 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-green-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700">
+                                        <i class="fab fa-whatsapp fa-fw"></i>
+                                        {{ equipment.client.phone }}
+                                    </a>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-x-1.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                                        <i class="fas fa-phone fa-fw"></i>
+                                        N/A
+                                    </span>
+                                {% endif %}
+                            </div>
                             <div class="mt-3 text-xs text-gray-500">
                                 {% set last_record = equipment.last_maintenance_record %}
                                 {{ equipment.maintenance_history.count() }} registro(s) de manutenção. 
@@ -145,7 +144,6 @@
                             </div>
                         </div>
                         
-                        <!-- Coluna de Datas e Ações -->
                         <div class="md:col-span-1 flex flex-col justify-between">
                             <div class="text-sm text-gray-600 space-y-2 text-left md:text-right">
                                 <div>
@@ -158,15 +156,15 @@
                                 </div>
                             </div>
                             <div class="mt-4 flex items-center justify-start md:justify-end gap-2">
-                                <a href="{{ url_for('equipment_history', equipment_id=equipment.id) }}" title="Histórico" class="flex items-center justify-center h-8 w-8 rounded bg-gray-600 text-white shadow-sm hover:bg-gray-700"><i class="fas fa-list-alt text-xs"></i></a>
-                                <a href="{{ url_for('new_maintenance_history', equipment_id=equipment.id) }}" title="Registrar Manutenção" class="flex items-center justify-center h-8 w-8 rounded bg-blue-600 text-white shadow-sm hover:bg-blue-700"><i class="fas fa-wrench text-xs"></i></a>
+                                <a href="{{ url_for('equipment.equipment_history', equipment_id=equipment.id) }}" title="Histórico" class="flex items-center justify-center h-8 w-8 rounded bg-gray-600 text-white shadow-sm hover:bg-gray-700"><i class="fas fa-list-alt text-xs"></i></a>
+                                <a href="{{ url_for('equipment.new_maintenance_history', equipment_id=equipment.id) }}" title="Registrar Manutenção" class="flex items-center justify-center h-8 w-8 rounded bg-blue-600 text-white shadow-sm hover:bg-blue-700"><i class="fas fa-wrench text-xs"></i></a>
                                 {% if equipment.client.address %}
-                                <a href="https://www.google.com/maps/search/?api=1&query={{ (equipment.client.address + ' ' + equipment.location)|urlencode }}" target="_blank" title="Ver no Mapa" class="flex items-center justify-center h-8 w-8 rounded bg-green-600 text-white shadow-sm hover:bg-green-700">
+                                <a href="https://maps.google.com/?q={{ (equipment.client.address + ' ' + equipment.location)|urlencode }}" target="_blank" title="Ver no Mapa" class="flex items-center justify-center h-8 w-8 rounded bg-green-600 text-white shadow-sm hover:bg-green-700">
                                     <i class="fas fa-map-location-dot text-xs"></i>
                                 </a>
                                 {% endif %}
                                 {% if current_user.role == 'admin' %}
-                                <a href="{{ url_for('display_qrcode', code=equipment.code) }}" title="Gerar QR Code" class="flex items-center justify-center h-8 w-8 rounded bg-gray-800 text-white shadow-sm hover:bg-black"><i class="fas fa-qrcode text-xs"></i></a>
+                                <a href="{{ url_for('qrcode.display_qrcode', code=equipment.code) }}" title="Gerar QR Code" class="flex items-center justify-center h-8 w-8 rounded bg-gray-800 text-white shadow-sm hover:bg-black"><i class="fas fa-qrcode text-xs"></i></a>
                                 {% endif %}
                             </div>
                         </div>
@@ -180,14 +178,14 @@
                 {% if active_filter %}
                     <p class="mt-2 text-sm text-gray-500">
                         Não há equipamentos que correspondam ao filtro selecionado.
-                        <a href="{{ url_for('dashboard') }}" class="font-medium text-indigo-600 hover:text-indigo-500">Limpar filtro</a>
+                        <a href="{{ url_for('core.dashboard') }}" class="font-medium text-indigo-600 hover:text-indigo-500">Limpar filtro</a>
                     </p>
                 {% elif current_user.role == 'admin' %}
                     <p class="mt-2 text-sm text-gray-500">
                         Parece que não há nada aqui. Que tal começar cadastrando o primeiro equipamento?
                     </p>
                     <div class="mt-6">
-                        <a href="{{ url_for('new_equipment') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+                        <a href="{{ url_for('equipment.new_equipment') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
                             <i class="fas fa-plus -ml-0.5 mr-1.5 h-5 w-5"></i>
                             Cadastrar Novo Equipamento
                         </a>
@@ -201,32 +199,31 @@
             {% endif %}
         </div>
 
-        <!-- Paginação (preserva o filtro ativo) -->
         {% if equipments.pages > 1 %}
         <div class="flex justify-center mt-6 flex-wrap gap-2">
             {% if equipments.has_prev %}
                 {% if active_filter %}
-                <a href="{{ url_for('dashboard', page=equipments.prev_num, status=active_filter) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">&laquo; Anterior</a>
+                <a href="{{ url_for('core.dashboard', page=equipments.prev_num, status=active_filter) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">« Anterior</a>
                 {% else %}
-                <a href="{{ url_for('dashboard', page=equipments.prev_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">&laquo; Anterior</a>
+                <a href="{{ url_for('core.dashboard', page=equipments.prev_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">« Anterior</a>
                 {% endif %}
             {% endif %}
 
             {% for p in range(1, equipments.pages + 1) %}
                 {% if active_filter %}
-                <a href="{{ url_for('dashboard', page=p, status=active_filter) }}"
+                <a href="{{ url_for('core.dashboard', page=p, status=active_filter) }}"
                    class="px-3 py-1 rounded {% if p == equipments.page %}bg-indigo-600 text-white{% else %}bg-gray-200 hover:bg-gray-300{% endif %}">{{ p }}</a>
                 {% else %}
-                <a href="{{ url_for('dashboard', page=p) }}"
+                <a href="{{ url_for('core.dashboard', page=p) }}"
                    class="px-3 py-1 rounded {% if p == equipments.page %}bg-indigo-600 text-white{% else %}bg-gray-200 hover:bg-gray-300{% endif %}">{{ p }}</a>
                 {% endif %}
             {% endfor %}
 
             {% if equipments.has_next %}
                 {% if active_filter %}
-                <a href="{{ url_for('dashboard', page=equipments.next_num, status=active_filter) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Próximo &raquo;</a>
+                <a href="{{ url_for('core.dashboard', page=equipments.next_num, status=active_filter) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Próximo »</a>
                 {% else %}
-                <a href="{{ url_for('dashboard', page=equipments.next_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Próximo &raquo;</a>
+                <a href="{{ url_for('core.dashboard', page=equipments.next_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Próximo »</a>
                 {% endif %}
             {% endif %}
         </div>

@@ -12,7 +12,7 @@
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="max-w-xl w-full mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden md:flex">
         <div class="md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-indigo-700 text-white">
-            <a href="{{ url_for('index') }}" class="flex items-center space-x-3 mb-6">
+            <a href="{{ url_for('leads.index') }}" class="flex items-center space-x-3 mb-6">
                 <div class="bg-white text-indigo-600 p-2 rounded-lg shadow-sm"><i class="fas fa-rocket text-xl"></i></div>
                 <span class="text-2xl font-bold">Sacada<span class="text-indigo-200">Gear</span></span>
             </a>
@@ -44,7 +44,7 @@
                 </div>
                  <div class="flex items-start">
                     <p class="text-xs text-gray-500">
-                        Ao enviar, você concorda com a nossa <a href="{{ url_for('privacy_policy') }}" target="_blank" class="text-indigo-600 font-semibold hover:underline">Política de Privacidade</a>.
+                        Ao enviar, você concorda com a nossa <a href="{{ url_for('leads.privacy_policy') }}" target="_blank" class="text-indigo-600 font-semibold hover:underline">Política de Privacidade</a>.
                     </p>
                 </div>
             </form>
@@ -59,7 +59,7 @@
             </div>
             <h2 class="text-2xl font-bold text-gray-800 mb-3">Obrigado!</h2>
             <p class="text-gray-600 mb-8">Seus dados foram recebidos. Entraremos em contato em breve!</p>
-            <a href="{{ url_for('index') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg w-full transition-all inline-block">Voltar ao Início</a>
+            <a href="{{ url_for('leads.index') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg w-full transition-all inline-block">Voltar ao Início</a>
         </div>
     </div>
     
@@ -72,7 +72,7 @@
                 leadForm.addEventListener('submit', function (event) {
                     event.preventDefault();
                     const formData = new FormData(leadForm);
-                    fetch("{{ url_for('submit_lead') }}", { method: 'POST', body: formData })
+                    fetch("{{ url_for('leads.submit_lead') }}", { method: 'POST', body: formData })
                         .then(response => response.json())
                         .then(data => {
                             if (data.status === 'success') {

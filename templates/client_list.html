@@ -10,7 +10,7 @@
                 <p class="mt-1 text-sm text-gray-600">Lista de todos os clientes cadastrados no sistema.</p>
             </div>
             <div class="mt-4 sm:mt-0 flex-shrink-0">
-                <a href="{{ url_for('new_client') }}" class="w-full justify-center inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">
+                <a href="{{ url_for('clients.new_client') }}" class="w-full justify-center inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">
                     <i class="fas fa-plus mr-2"></i>Novo Cliente
                 </a>
             </div>
@@ -58,10 +58,10 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                            <a href="{{ url_for('edit_client', client_id=client.id) }}" class="text-indigo-600 hover:text-indigo-900" title="Editar">
+                            <a href="{{ url_for('clients.edit_client', client_id=client.id) }}" class="text-indigo-600 hover:text-indigo-900" title="Editar">
                                 <i class="fas fa-pencil-alt"></i>
                             </a>
-                            <form action="{{ url_for('toggle_archive_client', client_id=client.id) }}" method="POST" class="inline" 
+                            <form action="{{ url_for('clients.toggle_archive_client', client_id=client.id) }}" method="POST" class="inline" 
                                   onsubmit="openConfirmationModal(event, 'Arquivar Cliente', 'Tem certeza que deseja arquivar o cliente \'{{ client.name }}\'?')">
                                 <button type="submit" class="text-yellow-600 hover:text-yellow-900" title="Arquivar">
                                     <i class="fas fa-archive"></i>
@@ -107,8 +107,8 @@
                 </p>
             </div>
             <div class="mt-4 border-t border-gray-200 pt-3 flex justify-end items-center gap-4">
-                <a href="{{ url_for('edit_client', client_id=client.id) }}" class="font-medium text-indigo-600 hover:text-indigo-900">Editar</a>
-                <form action="{{ url_for('toggle_archive_client', client_id=client.id) }}" method="POST" class="inline" 
+                <a href="{{ url_for('clients.edit_client', client_id=client.id) }}" class="font-medium text-indigo-600 hover:text-indigo-900">Editar</a>
+                <form action="{{ url_for('clients.toggle_archive_client', client_id=client.id) }}" method="POST" class="inline" 
                       onsubmit="openConfirmationModal(event, 'Arquivar Cliente', 'Tem certeza que deseja arquivar o cliente \'{{ client.name }}\'?')">
                     <button type="submit" class="text-yellow-600 hover:text-yellow-900" title="Arquivar">
                         <i class="fas fa-archive"></i>

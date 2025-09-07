@@ -11,7 +11,7 @@
             <div class="py-1"><i class="fas fa-info-circle mr-3 text-blue-500"></i></div>
             <div>
                 <p class="font-bold">Você está na sua lista pessoal de tarefas.</p>
-                <p class="text-sm">Para criar e gerenciar as tarefas de todos os técnicos, <a href="{{ url_for('admin_tasks') }}" class="font-bold underline hover:text-blue-600">clique aqui</a>.</p>
+                <p class="text-sm">Para criar e gerenciar as tarefas de todos os técnicos, <a href="{{ url_for('tasks.admin_tasks') }}" class="font-bold underline hover:text-blue-600">clique aqui</a>.</p>
             </div>
         </div>
     </div>
@@ -50,7 +50,7 @@
             </div>
 
             <div class="md:col-span-1 md:border-l md:pl-6 border-gray-200">
-                <form action="{{ url_for('update_task_status', assignment_id=assignment.id) }}" method="POST" class="space-y-4">
+                <form action="{{ url_for('tasks.update_task_status', assignment_id=assignment.id) }}" method="POST" class="space-y-4">
                     <h4 class="text-sm font-medium text-gray-600">Atualizar Andamento</h4>
                     <div>
                         <label for="status-{{ assignment.id }}" class="sr-only">Alterar Status</label>

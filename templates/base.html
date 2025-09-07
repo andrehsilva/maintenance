@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <style>
       :root {
@@ -17,9 +17,6 @@
       .text-primary-600 { color: var(--cor-primaria); }
       .bg-primary-600 { background-color: var(--cor-primaria); }
       [x-cloak] { display: none !important; }
-
-    
-
     </style>
 
     {% block head %}{% endblock %}
@@ -31,7 +28,7 @@
                 <div class="flex h-16 items-center justify-between">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                           <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('login') }}" class="flex items-center space-x-3">
+                           <a href="{{ url_for('core.dashboard') if current_user.is_authenticated else url_for('auth.login') }}" class="flex items-center space-x-3">
                                 <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-md">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z" />
@@ -44,59 +41,58 @@
                         <div class="hidden md:block">
                             <div class="ml-10 flex items-baseline space-x-4">
                                 {% if current_user.is_authenticated %}
-                                    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Manutenções</a>
-                                    <a href="{{ url_for('technician_tasks') }}" class="{% if request.endpoint == 'technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Tarefas</a>
-                                    <a href="{{ url_for('manage_expenses') }}" class="{% if request.endpoint == 'manage_expenses' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Despesas</a>
+                                    <a href="{{ url_for('core.dashboard') }}" class="{% if request.endpoint == 'core.dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Manutenções</a>
+                                    <a href="{{ url_for('tasks.technician_tasks') }}" class="{% if request.endpoint == 'tasks.technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Tarefas</a>
+                                    <a href="{{ url_for('expenses.manage_expenses') }}" class="{% if request.endpoint == 'expenses.manage_expenses' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Despesas</a>
                                     {% if current_user.role == 'technician' %}
-                                    <a href="{{ url_for('time_clock_page') }}" class="{% if request.endpoint == 'time_clock_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Ponto</a>
+                                    <a href="{{ url_for('time_clock.time_clock_page') }}" class="{% if request.endpoint == 'time_clock.time_clock_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Ponto</a>
                                     {% endif %}
                                     {% if current_user.role == 'admin' %}
                                     <div x-data="{ open: false }" class="relative">
-                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['client_list', 'new_client', 'edit_client', 'archived_clients', 'whatsapp_notifications'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
+                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['clients.client_list', 'clients.new_client', 'clients.edit_client', 'clients.archived_clients', 'notifications.whatsapp_notifications'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
                                             <span>Clientes</span><i class="fas fa-chevron-down ml-2 text-xs"></i>
                                         </button>
                                         <div x-show="open" x-cloak x-transition class="absolute left-0 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
-                                            <a href="{{ url_for('client_list') }}" class="{% if request.endpoint == 'client_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Listar Clientes</a>
-                                            <a href="{{ url_for('archived_clients') }}" class="{% if request.endpoint == 'archived_clients' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Arquivados</a>
-                                            <a href="{{ url_for('whatsapp_notifications') }}" class="{% if request.endpoint == 'whatsapp_notifications' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Notificar Clientes</a>
+                                            <a href="{{ url_for('clients.client_list') }}" class="{% if request.endpoint == 'clients.client_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Listar Clientes</a>
+                                            <a href="{{ url_for('clients.archived_clients') }}" class="{% if request.endpoint == 'clients.archived_clients' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Arquivados</a>
+                                            <a href="{{ url_for('notifications.whatsapp_notifications') }}" class="{% if request.endpoint == 'notifications.whatsapp_notifications' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Notificar Clientes</a>
                                         </div>
                                     </div>
                                     
                                     <div x-data="{ open: false }" class="relative">
-                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['equipment_list', 'new_equipment', 'edit_equipment', 'archived_list'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
+                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['equipment.equipment_list', 'equipment.new_equipment', 'equipment.edit_equipment', 'equipment.archived_list'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
                                             <span>Equipamentos</span><i class="fas fa-chevron-down ml-2 text-xs"></i>
                                         </button>
                                         <div x-show="open" x-cloak x-transition class="absolute left-0 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
-                                            <a href="{{ url_for('equipment_list') }}" class="{% if request.endpoint == 'equipment_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Listar</a>
-                                            <a href="{{ url_for('new_equipment') }}" class="{% if request.endpoint == 'new_equipment' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Cadastrar Novo</a>
+                                            <a href="{{ url_for('equipment.equipment_list') }}" class="{% if request.endpoint == 'equipment.equipment_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Listar</a>
+                                            <a href="{{ url_for('equipment.new_equipment') }}" class="{% if request.endpoint == 'equipment.new_equipment' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Cadastrar Novo</a>
                                             <div class="border-t border-gray-100 my-1"></div>
-                                            <a href="{{ url_for('archived_list') }}" class="{% if request.endpoint == 'archived_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Arquivados</a>
+                                            <a href="{{ url_for('equipment.archived_list') }}" class="{% if request.endpoint == 'equipment.archived_list' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Arquivados</a>
                                         </div>
                                     </div>
 
-                                    <a href="{{ url_for('stock_list') }}" class="{% if request.endpoint.startswith('stock_') %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Estoque</a>
+                                    <a href="{{ url_for('stock.stock_list') }}" class="{% if request.endpoint.startswith('stock.') %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Estoque</a>
                                    
                                     <div x-data="{ open: false }" class="relative">
-                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['financial_report', 'full_history', 'expense_report', 'time_clock_report'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
+                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['reports.financial_report', 'equipment.full_history', 'reports.expense_report', 'reports.time_clock_report', 'reports.stock_movement_report'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
                                             <span>Relatórios</span><i class="fas fa-chevron-down ml-2 text-xs"></i>
                                         </button>
                                         <div x-show="open" x-cloak x-transition class="absolute left-0 mt-2 w-48 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
-                                            <a href="{{ url_for('financial_report') }}" class="{% if request.endpoint == 'financial_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Financeiro</a>
-                                            <a href="{{ url_for('full_history') }}" class="{% if request.endpoint == 'full_history' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Histórico Completo</a>
-                                            <a href="{{ url_for('expense_report') }}" class="{% if request.endpoint == 'expense_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Relatório de Despesas</a>
-                                            <a href="{{ url_for('time_clock_report') }}" class="{% if request.endpoint == 'time_clock_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Relatório de Ponto</a>
-                                            <a href="{{ url_for('stock_movement_report') }}" class="{% if request.endpoint == 'stock_movement_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Relatório de Estoque</a>
-                                        
+                                            <a href="{{ url_for('reports.financial_report') }}" class="{% if request.endpoint == 'reports.financial_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Financeiro</a>
+                                            <a href="{{ url_for('equipment.full_history') }}" class="{% if request.endpoint == 'equipment.full_history' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Histórico Completo</a>
+                                            <a href="{{ url_for('reports.expense_report') }}" class="{% if request.endpoint == 'reports.expense_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Relatório de Despesas</a>
+                                            <a href="{{ url_for('reports.time_clock_report') }}" class="{% if request.endpoint == 'reports.time_clock_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Relatório de Ponto</a>
+                                            <a href="{{ url_for('reports.stock_movement_report') }}" class="{% if request.endpoint == 'reports.stock_movement_report' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Relatório de Estoque</a>
                                         </div>
                                     </div>
                                     
                                     <div x-data="{ open: false }" class="relative">
-                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['manage_settings', 'user_list'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
+                                        <button @click="open = !open" @click.away="open = false" class="{% if request.endpoint in ['core.manage_settings', 'users.user_list'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium flex items-center">
                                             <span>Configurações</span><i class="fas fa-chevron-down ml-2 text-xs"></i>
                                         </button>
                                         <div x-show="open" x-cloak x-transition class="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
-                                            <a href="{{ url_for('user_list') }}" class="{% if request.endpoint in ['user_list', 'create_user', 'edit_user'] %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Gerenciar Usuários</a>
-                                            <a href="{{ url_for('manage_settings') }}" class="{% if request.endpoint == 'manage_settings' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Gerais</a>
+                                            <a href="{{ url_for('users.user_list') }}" class="{% if request.endpoint in ['users.user_list', 'users.create_user', 'users.edit_user'] %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Gerenciar Usuários</a>
+                                            <a href="{{ url_for('core.manage_settings') }}" class="{% if request.endpoint == 'core.manage_settings' %}bg-gray-100{% endif %} block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Gerais</a>
                                         </div>
                                     </div>
                                     {% endif %}
@@ -123,7 +119,7 @@
                                     <div class="p-3 font-semibold text-sm text-gray-700 border-b">Notificações</div>
                                     <div class="py-1 max-h-80 overflow-y-auto">
                                         {% for notification in recent_notifications %}
-                                        <a href="{{ url_for('read_notification', notification_id=notification.id) }}" 
+                                        <a href="{{ url_for('notifications.read_notification', notification_id=notification.id) }}" 
                                            class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 {% if not notification.is_read %}bg-indigo-50{% endif %}">
                                            <p class="{% if not notification.is_read %}font-bold{% endif %}">{{ notification.message }}</p>
                                            <span class="block text-xs text-gray-400 mt-1">{{ notification.timestamp | localdatetime }}</span>
@@ -136,10 +132,10 @@
                             </div>
 
                             <span class="text-gray-400 text-sm ml-4 mr-4">Olá, {{ current_user.username }}</span>
-                            <a href="{{ url_for('logout') }}" class="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700">Sair</a>
+                            <a href="{{ url_for('auth.logout') }}" class="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700">Sair</a>
                             {% else %}
-                            <a href="{{ url_for('login') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Login</a>
-                            <a href="{{ url_for('register') }}" class="ml-4 rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">Cadastrar</a>
+                            <a href="{{ url_for('auth.login') }}" class="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Login</a>
+                            <a href="{{ url_for('auth.register') }}" class="ml-4 rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">Cadastrar</a>
                             {% endif %}
                         </div>
                     </div>
@@ -156,38 +152,38 @@
 
             <div class="md:hidden" x-show="mobileMenuOpen" x-cloak @click.away="mobileMenuOpen = false">
                 <div class="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-                    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Manutenções</a>
-                    <a href="{{ url_for('technician_tasks') }}" class="{% if request.endpoint == 'technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Tarefas</a>
-                    <a href="{{ url_for('manage_expenses') }}" class="{% if request.endpoint == 'manage_expenses' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Despesas</a>
+                    <a href="{{ url_for('core.dashboard') }}" class="{% if request.endpoint == 'core.dashboard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Manutenções</a>
+                    <a href="{{ url_for('tasks.technician_tasks') }}" class="{% if request.endpoint == 'tasks.technician_tasks' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Tarefas</a>
+                    <a href="{{ url_for('expenses.manage_expenses') }}" class="{% if request.endpoint == 'expenses.manage_expenses' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Despesas</a>
                     {% if current_user.role == 'technician' %}
-                    <a href="{{ url_for('time_clock_page') }}" class="{% if request.endpoint == 'time_clock_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Ponto</a>
+                    <a href="{{ url_for('time_clock.time_clock_page') }}" class="{% if request.endpoint == 'time_clock.time_clock_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Ponto</a>
                     {% endif %}
                     {% if current_user.role == 'admin' %}
                     <div class="border-t border-gray-700 my-2"></div>
                     <h3 class="px-3 pt-2 pb-1 text-xs font-semibold uppercase text-gray-400">Clientes</h3>
-                    <a href="{{ url_for('client_list') }}" class="{% if request.endpoint in ['client_list', 'new_client', 'edit_client'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Listar Clientes</a>
-                    <a href="{{ url_for('archived_clients') }}" class="{% if request.endpoint == 'archived_clients' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Ver Arquivados</a>
+                    <a href="{{ url_for('clients.client_list') }}" class="{% if request.endpoint in ['clients.client_list', 'clients.new_client', 'clients.edit_client'] %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Listar Clientes</a>
+                    <a href="{{ url_for('clients.archived_clients') }}" class="{% if request.endpoint == 'clients.archived_clients' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Ver Arquivados</a>
                     
                     <div class="border-t border-gray-700 my-2"></div>
                     <h3 class="px-3 pt-2 pb-1 text-xs font-semibold uppercase text-gray-400">Equipamentos</h3>
-                    <a href="{{ url_for('equipment_list') }}" class="{% if request.endpoint == 'equipment_list' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Listar</a>
-                    <a href="{{ url_for('new_equipment') }}" class="{% if request.endpoint == 'new_equipment' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Cadastrar</a>
-                    <a href="{{ url_for('archived_list') }}" class="{% if request.endpoint == 'archived_list' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Ver Arquivados</a>
+                    <a href="{{ url_for('equipment.equipment_list') }}" class="{% if request.endpoint == 'equipment.equipment_list' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Listar</a>
+                    <a href="{{ url_for('equipment.new_equipment') }}" class="{% if request.endpoint == 'equipment.new_equipment' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Cadastrar</a>
+                    <a href="{{ url_for('equipment.archived_list') }}" class="{% if request.endpoint == 'equipment.archived_list' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Ver Arquivados</a>
                     
                     <div class="border-t border-gray-700 my-2"></div>
-                    <a href="{{ url_for('stock_list') }}" class="{% if request.endpoint.startswith('stock_') %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Estoque</a>
+                    <a href="{{ url_for('stock.stock_list') }}" class="{% if request.endpoint.startswith('stock.') %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Estoque</a>
 
 
                     <div class="border-t border-gray-700 my-2"></div>
                     <h3 class="px-3 pt-2 pb-1 text-xs font-semibold uppercase text-gray-400">Relatórios</h3>
-                    <a href="{{ url_for('financial_report') }}" class="{% if request.endpoint == 'financial_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Financeiro</a>
-                    <a href="{{ url_for('full_history') }}" class="{% if request.endpoint == 'full_history' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Histórico Completo</a>
-                    <a href="{{ url_for('expense_report') }}" class="{% if request.endpoint == 'expense_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Rel. Despesas</a>
-                    <a href="{{ url_for('time_clock_report') }}" class="{% if request.endpoint == 'time_clock_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Rel. Ponto</a>
-                    <a href="{{ url_for('stock_movement_report') }}" class="{% if request.endpoint == 'stock_movement_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Rel. Estoque</a>
+                    <a href="{{ url_for('reports.financial_report') }}" class="{% if request.endpoint == 'reports.financial_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Financeiro</a>
+                    <a href="{{ url_for('equipment.full_history') }}" class="{% if request.endpoint == 'equipment.full_history' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Histórico Completo</a>
+                    <a href="{{ url_for('reports.expense_report') }}" class="{% if request.endpoint == 'reports.expense_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Rel. Despesas</a>
+                    <a href="{{ url_for('reports.time_clock_report') }}" class="{% if request.endpoint == 'reports.time_clock_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Rel. Ponto</a>
+                    <a href="{{ url_for('reports.stock_movement_report') }}" class="{% if request.endpoint == 'reports.stock_movement_report' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Rel. Estoque</a>
 
                     <div class="border-t border-gray-700 my-2"></div>
-                    <a href="{{ url_for('manage_settings') }}" class="{% if request.endpoint == 'manage_settings' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Configurações</a>
+                    <a href="{{ url_for('core.manage_settings') }}" class="{% if request.endpoint == 'core.manage_settings' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block rounded-md px-3 py-2 text-base font-medium">Configurações</a>
                     {% endif %}
                 </div>
                 <div class="border-t border-gray-700 pb-3 pt-4">
@@ -208,7 +204,7 @@
                         </a>
                     </div>
                     <div class="mt-3 space-y-1 px-2">
-                        <a href="{{ url_for('logout') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Sair</a>
+                        <a href="{{ url_for('auth.logout') }}" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Sair</a>
                     </div>
                 </div>
             </div>

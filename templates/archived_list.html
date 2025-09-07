@@ -29,7 +29,7 @@
                             <td class="px-3 py-4 text-sm text-gray-500">{{ equipment.client.name }} / {{ equipment.location }}</td>
                             <td class="px-3 py-4 text-sm text-gray-500">{{ equipment.operator.username }}</td>
                             <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                                <form action="{{ url_for('toggle_archive_equipment', equipment_id=equipment.id) }}" method="POST" class="inline">
+                                <form action="{{ url_for('equipment.toggle_archive_equipment', equipment_id=equipment.id) }}" method="POST" class="inline">
                                     <button type="submit" class="text-indigo-600 hover:text-indigo-900">Desarquivar</button>
                                 </form>
                             </td>
@@ -49,16 +49,16 @@
     {% if equipments.pages > 1 %}
     <div class="flex justify-center mt-6 flex-wrap gap-2">
         {% if equipments.has_prev %}
-            <a href="{{ url_for('archived_list', page=equipments.prev_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">&laquo; Anterior</a>
+            <a href="{{ url_for('equipment.archived_list', page=equipments.prev_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">&laquo; Anterior</a>
         {% endif %}
         {% for p in range(1, equipments.pages + 1) %}
-            <a href="{{ url_for('archived_list', page=p) }}"
+            <a href="{{ url_for('equipment.archived_list', page=p) }}"
                class="px-3 py-1 rounded {% if p == equipments.page %}bg-indigo-600 text-white{% else %}bg-gray-200 hover:bg-gray-300{% endif %}">
                {{ p }}
             </a>
         {% endfor %}
         {% if equipments.has_next %}
-            <a href="{{ url_for('archived_list', page=equipments.next_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Próximo &raquo;</a>
+            <a href="{{ url_for('equipment.archived_list', page=equipments.next_num) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Próximo &raquo;</a>
         {% endif %}
     </div>
     {% endif %}

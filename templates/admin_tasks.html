@@ -8,7 +8,7 @@
         <p class="mt-2 text-sm text-gray-700">Acompanhe o status e as observações das tarefas atribuídas a cada técnico.</p>
     </div>
     <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-        <a href="{{ url_for('create_task') }}" class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+        <a href="{{ url_for('tasks.create_task') }}" class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
             <i class="fas fa-plus mr-2"></i>Nova Tarefa
         </a>
     </div>
@@ -26,10 +26,10 @@
                     {% endif %}
                 </div>
                 <div class="flex-shrink-0 ml-4 flex items-center gap-3">
-                    <a href="{{ url_for('edit_task', task_id=task.id) }}" class="text-indigo-600 hover:text-indigo-800" title="Editar Tarefa">
+                    <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="text-indigo-600 hover:text-indigo-800" title="Editar Tarefa">
                         <i class="fas fa-pencil-alt"></i>
                     </a>
-                    <form action="{{ url_for('delete_task', task_id=task.id) }}" method="POST" 
+                    <form action="{{ url_for('tasks.delete_task', task_id=task.id) }}" method="POST" 
                           onsubmit="openConfirmationModal(event, 'Deletar Tarefa', 'Tem certeza que deseja deletar esta tarefa?')">
                         <button type="submit" class="text-red-600 hover:text-red-800" title="Deletar Tarefa">
                             <i class="fas fa-trash-alt"></i>

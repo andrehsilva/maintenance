@@ -10,7 +10,7 @@
                 <p class="mt-1 text-sm text-gray-600">Todos os usuários do sistema, incluindo administradores e técnicos.</p>
             </div>
             <div class="mt-4 sm:mt-0">
-                <a href="{{ url_for('create_user') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+                <a href="{{ url_for('users.create_user') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
                     <i class="fas fa-plus mr-2"></i>Criar Novo Usuário
                 </a>
             </div>
@@ -50,15 +50,15 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
                         {% if not user.is_active %}
-                        <form action="{{ url_for('approve_user', user_id=user.id) }}" method="POST" class="inline">
+                        <form action="{{ url_for('users.approve_user', user_id=user.id) }}" method="POST" class="inline">
                             <button type="submit" class="font-medium text-green-600 hover:text-green-900" title="Aprovar Usuário">
                                 <i class="fas fa-check-circle mr-1"></i>Aprovar
                             </button>
                         </form>
                         {% endif %}
-                        <a href="{{ url_for('edit_user', user_id=user.id) }}" class="text-indigo-600 hover:text-indigo-900" title="Editar"><i class="fas fa-pencil-alt"></i></a>
+                        <a href="{{ url_for('users.edit_user', user_id=user.id) }}" class="text-indigo-600 hover:text-indigo-900" title="Editar"><i class="fas fa-pencil-alt"></i></a>
                         {% if user.id != current_user.id %}
-                        <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" class="inline" 
+                        <form action="{{ url_for('users.delete_user', user_id=user.id) }}" method="POST" class="inline" 
                               onsubmit="openConfirmationModal(event, 'Excluir Usuário', 'Tem certeza que deseja excluir o usuário \'{{ user.username }}\'?')">
                             <button type="submit" class="text-red-600 hover:text-red-900" title="Excluir"><i class="fas fa-trash-alt"></i></button>
                         </form>

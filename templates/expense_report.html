@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md">
     <!-- Seção de Filtros -->
-    <form method="GET" action="{{ url_for('expense_report') }}" id="filter-form">
+    <form method="GET" action="{{ url_for('reports.expense_report') }}" id="filter-form">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end">
             <div>
                 <label for="technician_id" class="block text-sm font-medium text-gray-700">Técnico</label>
@@ -38,14 +38,14 @@
             </div>
             <div class="flex gap-2">
                 <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">Filtrar</button>
-                <a href="{{ url_for('expense_report') }}" class="w-full inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">Limpar</a>
+                <a href="{{ url_for('reports.expense_report') }}" class="w-full inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">Limpar</a>
             </div>
         </div>
     </form>
 
     <!-- Botão de Download -->
     <div class="mt-4 text-right">
-        <a id="download-excel-btn" href="{{ url_for('export_expenses') }}" class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700">
+        <a id="download-excel-btn" href="{{ url_for('reports.export_expenses') }}" class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700">
             <i class="fas fa-file-excel mr-2"></i>Download Excel
         </a>
     </div>
@@ -110,7 +110,7 @@
             // Pega os parâmetros da URL da página atual
             const currentParams = new URLSearchParams(window.location.search);
             // Define o link do botão de download com esses mesmos parâmetros
-            downloadBtn.href = "{{ url_for('export_expenses') }}?" + currentParams.toString();
+            downloadBtn.href = "{{ url_for('reports.export_expenses') }}?" + currentParams.toString();
         }
     });
 </script>
