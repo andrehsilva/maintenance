@@ -38,37 +38,49 @@ def format_datetime_local(utc_datetime, fmt=None):
     return local_datetime.strftime('%d/%m/%Y às %H:%M')
 
 
+# Em app.py
+
 def register_blueprints(app):
-    """
-    Importa e registra todos os blueprints (módulos de rotas) da aplicação.
-    """
+    """Importa e registra todos os blueprints da aplicação."""
+    # Módulos Principais (sempre ativos)
     from routes.core import core_bp
     from routes.auth import auth_bp
     from routes.users import users_bp
     from routes.clients import clients_bp
     from routes.equipment import equipment_bp
     from routes.stock import stock_bp
-    from routes.tasks import tasks_bp
-    from routes.expenses import expenses_bp
-    from routes.time_clock import time_clock_bp
-    from routes.reports import reports_bp
-    from routes.leads import leads_bp
     from routes.notifications import notifications_bp
     from routes.qrcode import qrcode_bp
-
+    
     app.register_blueprint(core_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(clients_bp)
     app.register_blueprint(equipment_bp)
     app.register_blueprint(stock_bp)
-    app.register_blueprint(tasks_bp)
-    app.register_blueprint(expenses_bp)
-    app.register_blueprint(time_clock_bp)
-    app.register_blueprint(reports_bp)
-    app.register_blueprint(leads_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(qrcode_bp)
+
+    # --- Módulos Opcionais ---
+    if app.config.get('FEATURE_TASKS_ENABLED'):
+        from routes.tasks import tasks_bp
+        app.register_blueprint(tasks_bp)
+
+    if app.config.get('FEATURE_EXPENSES_ENABLED'):
+        from routes.expenses import expenses_bp
+        app.register_blueprint(expenses_bp)
+
+    if app.config.get('FEATURE_TIME_CLOCK_ENABLED'):
+        from routes.time_clock import time_clock_bp
+        app.register_blueprint(time_clock_bp)
+
+    if app.config.get('FEATURE_REPORTS_ENABLED'):
+        from routes.reports import reports_bp
+        app.register_blueprint(reports_bp)
+        
+    if app.config.get('FEATURE_LEADS_ENABLED'):
+        from routes.leads import leads_bp
+        app.register_blueprint(leads_bp)
 
 
 def register_commands(app):
@@ -94,6 +106,13 @@ def create_app():
 
     # --- 1. CONFIGURAÇÕES ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'uma-chave-secreta-de-desenvolvimento')
+
+    app.config['FEATURE_TASKS_ENABLED'] = os.environ.get('FEATURE_TASKS_ENABLED') == 'True'
+    app.config['FEATURE_EXPENSES_ENABLED'] = os.environ.get('FEATURE_EXPENSES_ENABLED') == 'True'
+    app.config['FEATURE_TIME_CLOCK_ENABLED'] = os.environ.get('FEATURE_TIME_CLOCK_ENABLED') == 'True'
+    app.config['FEATURE_REPORTS_ENABLED'] = os.environ.get('FEATURE_REPORTS_ENABLED') == 'True'
+    app.config['FEATURE_LEADS_ENABLED'] = os.environ.get('FEATURE_LEADS_ENABLED') == 'True'
+
     
     database_url = os.environ.get('DATABASE_URL')
     if database_url:
