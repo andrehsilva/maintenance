@@ -266,3 +266,38 @@ class MaintenancePartUsed(db.Model):
 
     # Relação para acessar o item de estoque facilmente a partir deste registro
     item = db.relationship('StockItem')
+
+
+# Em models.py
+
+class Appointment(db.Model):
+    __tablename__ = 'appointment'  # Nome da tabela em minúsculas
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Tipo de evento, para flexibilidade.
+    # Ex: 'MAINTENANCE', 'RESERVATION', 'INCIDENT'
+    event_type = db.Column(db.String(50), nullable=False, default='MAINTENANCE')
+
+    title = db.Column(db.String(200), nullable=False)
+    start_datetime = db.Column(db.DateTime, nullable=False, index=True)
+    end_datetime = db.Column(db.DateTime, nullable=False)
+    
+    # Status do agendamento.
+    # Ex: 'SCHEDULED', 'COMPLETED', 'CANCELLED'
+    status = db.Column(db.String(50), default='SCHEDULED', index=True) 
+    
+    notes = db.Column(db.Text, nullable=True)
+
+    # Foreign Keys para os relacionamentos
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)       # O técnico/responsável
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)   # O cliente/unidade
+    equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), nullable=True) # O ativo/equipamento
+
+    # Relationships para facilitar o acesso aos objetos
+    technician = db.relationship('User', backref='appointments')
+    client = db.relationship('Client', backref='appointments')
+    equipment = db.relationship('Equipment', backref='appointments')
+
+    def __repr__(self):
+        return f'<Appointment #{self.id} - {self.title}>'
