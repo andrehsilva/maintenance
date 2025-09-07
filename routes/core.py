@@ -22,19 +22,35 @@ def index():
     return render_template('landing_page.html')
 
 
+# Em routes/core.py
+
+# Não se esqueça de importar o Client no topo do arquivo
+from models import Equipment, Setting, Client
+# ... (outras importações)
+
 @core_bp.route('/dashboard')
 @login_required
 def dashboard():
     """Painel principal com estatísticas e equipamentos."""
+    # --- NOVOS TRECHOS ---
     status_filter = request.args.get('status')
+    client_id = request.args.get('client_id', type=int) # Pega o ID do cliente da URL
+    
     page = request.args.get('page', 1, type=int)
     per_page = 10
 
+    # --- LÓGICA DO FILTRO ATUALIZADA ---
     if current_user.role == 'admin':
         base_query = Equipment.query.filter_by(is_archived=False)
     else:
         base_query = Equipment.query.filter_by(user_id=current_user.id, is_archived=False)
 
+    # Aplica o filtro de cliente se um for selecionado
+    if client_id:
+        base_query = base_query.filter_by(client_id=client_id)
+
+    # A partir daqui, o resto da função usa o `base_query` já filtrado,
+    # então os cards de status e a lista de equipamentos refletirão o filtro.
     all_user_equipments = base_query.order_by(Equipment.next_maintenance_date).all()
 
     stats = {
@@ -45,13 +61,16 @@ def dashboard():
     }
 
     equipments_to_display = all_user_equipments
-    if status_filter == 'em_dia':
-        equipments_to_display = [e for e in all_user_equipments if e.status == 'Em dia']
-    elif status_filter == 'proximo':
-        equipments_to_display = [e for e in all_user_equipments if e.status == 'Próximo do vencimento']
-    elif status_filter == 'vencido':
-        equipments_to_display = [e for e in all_user_equipments if e.status == 'Vencido']
+    if status_filter:
+        # A filtragem por status continua funcionando sobre o resultado já filtrado por cliente
+        if status_filter == 'em_dia':
+            equipments_to_display = [e for e in all_user_equipments if e.status == 'Em dia']
+        elif status_filter == 'proximo':
+            equipments_to_display = [e for e in all_user_equipments if e.status == 'Próximo do vencimento']
+        elif status_filter == 'vencido':
+            equipments_to_display = [e for e in all_user_equipments if e.status == 'Vencido']
 
+    # ... (O resto da sua lógica de paginação continua igual) ...
     total_items = len(equipments_to_display)
     start = (page - 1) * per_page
     end = start + per_page
@@ -59,24 +78,26 @@ def dashboard():
 
     class Pagination:
         def __init__(self, items, page, per_page, total):
-            self.items = items
-            self.page = page
-            self.per_page = per_page
-            self.total = total
+            self.items, self.page, self.per_page, self.total = items, page, per_page, total
             self.pages = ceil(total / per_page)
-            self.has_prev = page > 1
-            self.has_next = page < self.pages
-            self.prev_num = page - 1
-            self.next_num = page + 1
+            self.has_prev, self.has_next = page > 1, page < self.pages
+            self.prev_num, self.next_num = page - 1, page + 1
 
     equipments = Pagination(items, page, per_page, total_items)
+
+    # --- NOVO ---
+    # Busca todos os clientes para popular o menu de seleção
+    clients = Client.query.filter_by(is_archived=False).order_by(Client.name).all()
 
     return render_template(
         'dashboard.html',
         equipments=equipments,
         stats=stats,
-        active_filter=status_filter
+        active_filter=status_filter,
+        clients=clients,  # Passa a lista de clientes para o template
+        filters=request.args # Passa os filtros atuais para o template
     )
+
 
 
 @core_bp.route('/settings', methods=['GET', 'POST'])
