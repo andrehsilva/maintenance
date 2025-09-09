@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <title>{% block title %}SacadaGear{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
@@ -46,6 +47,10 @@
 
                                     {% if config.get('FEATURE_EXPENSES_ENABLED') %}
                                     <a href="{{ url_for('expenses.manage_expenses') }}" class="{% if request.endpoint == 'expenses.manage_expenses' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Despesas</a>
+                                    {% endif %}
+
+                                    {% if config.get('FEATURE_SCHEDULE_ENABLED') %}
+                                    <a href="{{ url_for('schedule.calendar_view') }}" class="{% if request.endpoint == 'schedule.calendar_view' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">Agenda</a>
                                     {% endif %}
 
                                     {% if current_user.role == 'technician' and config.get('FEATURE_TIME_CLOCK_ENABLED') %}

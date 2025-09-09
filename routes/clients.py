@@ -8,6 +8,8 @@ utilizando um Flask Blueprint.
 import re
 from flask import (Blueprint, render_template, request, redirect, url_for, flash, abort)
 from flask_login import login_required, current_user
+from models import Client, User, Notification, SchedulingLink # Adicione SchedulingLink
+
 
 # Importa os modelos e a instância do banco de dados das extensões
 from models import Client, User, Notification
@@ -121,3 +123,29 @@ def archived_clients():
     """Exibe a lista de clientes arquivados."""
     archived = Client.query.filter_by(is_archived=True).order_by(Client.name).all()
     return render_template('archived_clients.html', clients=archived)
+
+
+
+@clients_bp.route('/client/<int:client_id>/generate-link', methods=['POST'])
+@login_required
+@admin_required
+def generate_schedule_link(client_id):
+    client = db.session.get(Client, client_id)
+    if not client:
+        flash('Cliente não encontrado.', 'danger')
+        return redirect(url_for('clients.client_list'))
+    
+    # Invalida links antigos para este cliente (opcional, mas recomendado)
+    SchedulingLink.query.filter_by(client_id=client_id, is_used=False).update({'is_used': True})
+
+    # Cria o novo link
+    purpose = request.form.get('purpose', f'Agendamento para {client.name}')
+    new_link = SchedulingLink(client_id=client_id, purpose=purpose)
+    db.session.add(new_link)
+    db.session.commit()
+
+    # Gera a URL completa para o admin copiar
+    public_url = url_for('schedule.public_schedule_page', token=new_link.token, _external=True)
+    
+    flash(f'Link gerado com sucesso! Envie para o cliente: {public_url}', 'success')
+    return redirect(url_for('clients.client_list'))

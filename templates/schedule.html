@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+
+{% block title %}Agenda de Serviços{% endblock %}
+{% block header %}Agenda de Serviços{% endblock %}
+
+{% block head %}
+    <style>
+        #calendar-container { height: 75vh; }
+        .fc-event-main-frame { font-size: 13px; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+    <div id="calendar-container">
+        <div id='calendar'></div>
+    </div>
+</div>
+
+<div 
+    x-data="{ 
+        open: false, 
+        selectedDate: '', 
+        startTime: '',
+        endTime: '',
+        title: '',
+        technicianId: '',
+        clientId: '',
+        messageModal: false,
+        messageText: '',
+        messageType: 'success',
+        eventModal: false,
+        eventDetails: {},
+        confirmModal: false,
+        confirmTitle: 'Confirmar Exclusão',
+        confirmMessage: 'Tem certeza que deseja excluir este agendamento?',
+        eventIdToDelete: null,
+        editModal: false,
+        editEvent: { id: null, title: '', start: '', end: '', clientId: '', technicianId: '' },
+
+        showMessage(text, type = 'success') {
+            this.messageText = text;
+            this.messageType = type;
+            this.messageModal = true;
+            if (type === 'success') {
+                setTimeout(() => { this.messageModal = false; }, 3000);
+            }
+        },
+        showEventDetails(event) {
+            this.eventDetails = event;
+            this.eventModal = true;
+        },
+        saveAppointment() {
+            let errors = [];
+            if (!this.title.trim()) { errors.push('Título do Evento'); }
+            if (!this.startTime) { errors.push('Hora Início'); }
+            if (!this.endTime) { errors.push('Hora Fim'); }
+            if (!this.technicianId) { errors.push('Técnico Responsável'); }
+
+            if (errors.length > 0) {
+                this.showMessage('Por favor, preencha os campos obrigatórios:\n- ' + errors.join('\n- '), 'error');
+                return;
+            }
+
+            if (this.startTime >= this.endTime) {
+                this.showMessage('A hora de fim deve ser posterior à hora de início.', 'error');
+                return;
+            }
+
+            const appointmentData = {
+                title: this.title.trim(),
+                start: `${this.selectedDate}T${this.startTime}`,
+                end: `${this.selectedDate}T${this.endTime}`,
+                client_id: this.clientId || null,
+                user_id: this.technicianId
+            };
+
+            fetch('{{ url_for("schedule.api_create_appointment") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(appointmentData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    this.showMessage('Agendamento criado com sucesso!', 'success');
+                    this.open = false;
+                    this.resetForm();
+                    if (window.calendar) { calendar.refetchEvents(); }
+                } else {
+                    this.showMessage('Erro ao salvar: ' + (data.message || 'Erro desconhecido'), 'error');
+                }
+            })
+            .catch(() => this.showMessage('Ocorreu um erro de comunicação com o servidor.', 'error'));
+        },
+        resetForm() {
+            this.title = '';
+            this.startTime = '';
+            this.endTime = '';
+            this.technicianId = '';
+            this.clientId = '';
+            this.selectedDate = '';
+        },
+        openConfirmDelete(eventId) {
+            this.eventIdToDelete = eventId;
+            this.confirmModal = true;
+        },
+        confirmDelete() {
+            if (!this.eventIdToDelete) return;
+
+            fetch(`/api/appointments/${this.eventIdToDelete}`, { method: 'DELETE' })
+            .then(response => {
+                // checar status HTTP
+                if (!response.ok) {
+                    // tentar ler JSON de erro; se falhar, criar mensagem genérica
+                    return response.json()
+                        .catch(() => { throw { message: 'Erro ao excluir (resposta inválida do servidor).' }; })
+                        .then(errJson => { throw errJson; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    this.showMessage('Agendamento excluído com sucesso!', 'success');
+                    this.confirmModal = false;
+                    this.eventModal = false;
+                    this.eventIdToDelete = null;
+                    if (window.calendar) { calendar.refetchEvents(); }
+                } else {
+                    this.showMessage(data.message || 'Erro ao excluir', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Erro ao excluir:', err);
+                // err pode ser um objeto com .message ou um string
+                const msg = err && err.message ? err.message : (typeof err === 'string' ? err : 'Erro de comunicação com o servidor.');
+                this.showMessage(msg, 'error');
+            });
+        },
+
+        openEditModal(event) {
+            this.editEvent = {
+                id: event.id,
+                title: event.title || '',
+                start: event.start || '',
+                end: event.end || '',
+                clientId: event.clientId || '',
+                technicianId: event.technicianId || ''
+            };
+            this.eventModal = false;
+            this.editModal = true;
+        },
+        updateAppointment() {
+            if (!this.editEvent.id) return;
+            fetch(`/api/appointments/${this.editEvent.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: this.editEvent.title,
+                    start: this.editEvent.start,
+                    end: this.editEvent.end,
+                    client_id: this.editEvent.clientId || null,
+                    user_id: this.editEvent.technicianId
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    this.showMessage('Agendamento atualizado com sucesso!', 'success');
+                    this.editModal = false;
+                    if (window.calendar) { calendar.refetchEvents(); }
+                } else {
+                    this.showMessage(data.message || 'Erro ao atualizar', 'error');
+                }
+            })
+            .catch(() => this.showMessage('Erro de comunicação com o servidor.', 'error'));
+        },
+        approveAppointment(id) {
+            if (!this.technicianId) {
+                this.showMessage('Selecione um técnico antes de aprovar.', 'error');
+                return;
+            }
+            fetch(`/api/appointments/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'SCHEDULED',
+                    user_id: this.technicianId
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    this.showMessage('Agendamento aprovado com sucesso!', 'success');
+                    this.eventModal = false;
+                    if (window.calendar) { calendar.refetchEvents(); }
+                } else {
+                    this.showMessage(data.message || 'Erro ao aprovar', 'error');
+                }
+            })
+            .catch(() => this.showMessage('Erro de comunicação com o servidor.', 'error'));
+        }
+    }" 
+    @open-modal.window="
+        open = true;
+        selectedDate = $event.detail.date;
+        startTime = $event.detail.startTime;
+        endTime = $event.detail.endTime;
+        title = '';
+        technicianId = '';
+        clientId = '';
+    "
+    @show-event-details.window="showEventDetails($event.detail)"
+>
+
+<!-- Modal de Criar Agendamento -->
+<div x-show="open" x-cloak class="relative z-10" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div x-show="open" x-transition.opacity class="fixed inset-0 bg-gray-500 bg-opacity-75"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div @click.away="open = false" x-show="open" x-transition class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg font-semibold leading-6 text-gray-900">Criar Novo Agendamento</h3>
+                    <p class="text-sm text-gray-500">Para o dia: <span class="font-medium" x-text="selectedDate ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR') : ''"></span></p>
+                    
+                    <div class="mt-4 space-y-4">
+                        <div>
+                            <label for="title" class="block text-sm font-medium">Título do Evento <span class="text-red-500">*</span></label>
+                            <input type="text" x-model="title" id="title" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Digite o título do evento" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="startTime" class="block text-sm font-medium">Hora Início <span class="text-red-500">*</span></label>
+                                <input type="time" x-model="startTime" id="startTime" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                            </div>
+                            <div>
+                                <label for="endTime" class="block text-sm font-medium">Hora Fim <span class="text-red-500">*</span></label>
+                                <input type="time" x-model="endTime" id="endTime" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="clientId" class="block text-sm font-medium">Cliente (Opcional)</label>
+                            <select x-model="clientId" id="clientId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="">Nenhum (Tarefa Interna)</option>
+                                {% for client in clients %}
+                                    <option value="{{ client.id }}">{{ client.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="technicianId" class="block text-sm font-medium">Técnico Responsável <span class="text-red-500">*</span></label>
+                            <select x-model="technicianId" id="technicianId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                <option value="">Selecione um técnico</option>
+                                {% for tech in technicians %}
+                                    <option value="{{ tech.id }}">{{ tech.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="button" @click="saveAppointment()" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:ml-3 sm:w-auto">
+                        Salvar Agendamento
+                    </button>
+                    <button type="button" @click="open = false; resetForm()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:w-auto">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Mensagens -->
+<div x-show="messageModal" x-cloak class="relative z-20" aria-labelledby="message-modal-title" role="dialog" aria-modal="true">
+    <div x-show="messageModal" x-transition.opacity class="fixed inset-0 bg-gray-500 bg-opacity-75"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div x-show="messageModal" x-transition 
+                 class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10"
+                             :class="messageType === 'success' ? 'bg-green-100' : 'bg-red-100'">
+                            <svg x-show="messageType === 'success'" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                            <svg x-show="messageType === 'error'" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-base font-semibold leading-6 text-gray-900" id="message-modal-title" 
+                                x-text="messageType === 'success' ? 'Sucesso' : 'Erro'"></h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500" x-text="messageText"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="button" @click="messageModal = false" 
+                            class="inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm sm:ml-3 sm:w-auto"
+                            :class="messageType === 'success' ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div x-show="confirmModal" x-cloak class="relative z-30" aria-labelledby="confirm-modal-title" role="dialog" aria-modal="true">
+    <div x-show="confirmModal" x-transition.opacity class="fixed inset-0 bg-gray-500 bg-opacity-75"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div x-show="confirmModal" x-transition 
+                 class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75M3.697 16.126c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L3.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-base font-semibold leading-6 text-gray-900" id="confirm-modal-title" x-text="confirmTitle"></h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500" x-text="confirmMessage"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="button" @click="confirmDelete()"
+                            class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">
+                        Sim, Excluir
+                    </button>
+                    <button type="button" @click="confirmModal = false"
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<!-- NOVO: Modal de Edição -->
+<div x-show="editModal" x-cloak class="relative z-30" aria-labelledby="edit-modal-title" role="dialog" aria-modal="true">
+    <div x-show="editModal" x-transition.opacity class="fixed inset-0 bg-gray-500 bg-opacity-75"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div @click.away="editModal = false" x-show="editModal" x-transition 
+                 class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg font-semibold leading-6 text-gray-900" id="edit-modal-title">Editar Agendamento</h3>
+                    <div class="mt-4 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium">Título do Evento <span class="text-red-500">*</span></label>
+                            <input type="text" x-model="editEvent.title" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500" placeholder="Digite o título do evento" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium">Início <span class="text-red-500">*</span></label>
+                                <input type="datetime-local" x-model="editEvent.start" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium">Fim <span class="text-red-500">*</span></label>
+                                <input type="datetime-local" x-model="editEvent.end" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">Cliente (Opcional)</label>
+                            <select x-model="editEvent.clientId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500">
+                                <option value="">Nenhum (Tarefa Interna)</option>
+                                {% for client in clients %}
+                                    <option value="{{ client.id }}">{{ client.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">Técnico Responsável <span class="text-red-500">*</span></label>
+                            <select x-model="editEvent.technicianId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500" required>
+                                <option value="">Selecione um técnico</option>
+                                {% for tech in technicians %}
+                                    <option value="{{ tech.id }}">{{ tech.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="button" @click="updateAppointment()" 
+                            class="inline-flex w-full justify-center rounded-md bg-yellow-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-400 sm:ml-3 sm:w-auto">
+                        Salvar Alterações
+                    </button>
+                    <button type="button" @click="editModal = false" 
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal de Detalhes do Evento -->
+<div x-show="eventModal" x-cloak class="relative z-20">
+    <div x-show="eventModal" x-transition.opacity class="fixed inset-0 bg-gray-500 bg-opacity-75"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div @click.away="eventModal = false" x-show="eventModal" x-transition 
+                 class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-lg">
+                
+                <!-- Cabeçalho e conteúdo -->
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
+                            <h3 class="text-lg font-semibold leading-6 text-gray-900">
+                                Detalhes do Evento
+                            </h3>
+                            <div class="mt-4 space-y-3">
+                                <h4 class="font-medium text-gray-900" x-text="eventDetails.title || 'Sem título'"></h4>
+                                <div class="border-t border-gray-200 pt-3 space-y-2 text-sm">
+                                    <p><span class="font-medium">Técnico:</span> <span x-text="eventDetails.technicianName || 'Não informado'"></span></p>
+                                    <p><span class="font-medium">Cliente:</span> <span x-text="eventDetails.clientName || 'Tarefa Interna'"></span></p>
+                                    <p><span class="font-medium">Tipo:</span> <span x-text="eventDetails.eventType"></span></p>
+                                    <p><span class="font-medium">Status:</span> <span x-text="eventDetails.status"></span></p>
+                                    <p><span class="font-medium">Horário:</span> <span x-text="eventDetails.timeRange"></span></p>
+                                </div>
+
+                                <!-- Select de técnico só quando for aprovação -->
+                                <template x-if="eventDetails.status === 'PENDING_APPROVAL'">
+                                    <div class="mt-3">
+                                        <label for="approveTechnician" class="block text-sm font-medium text-gray-700">
+                                            Selecionar Técnico
+                                        </label>
+                                        <select x-model="technicianId" id="approveTechnician" 
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                                            <option value="">Selecione um técnico</option>
+                                            {% for tech in technicians %}
+                                                <option value="{{ tech.id }}">{{ tech.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rodapé com botões -->
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <!-- Botão Aprovar se estiver pendente -->
+                    <template x-if="eventDetails.status === 'PENDING_APPROVAL'">
+                        <button type="button" @click="approveAppointment(eventDetails.id)" 
+                            class="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 sm:ml-3 sm:w-auto">
+                            Aprovar
+                        </button>
+                    </template>
+
+                    <button type="button" @click="openEditModal(eventDetails)" 
+                            class="inline-flex w-full justify-center rounded-md bg-yellow-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-400 sm:ml-3 sm:w-auto">
+                        Editar
+                    </button>
+
+                    <button type="button" @click="openConfirmDelete(eventDetails.id)" 
+                            class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">
+                        Excluir
+                    </button>
+
+                    <button type="button" @click="eventModal = false" 
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:mt-0 sm:w-auto">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            locale: 'pt-br',
+            allDaySlot: false,
+            slotMinTime: '07:00:00',
+            slotMaxTime: '19:00:00',
+            buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia' },
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            events: {
+                url: '{{ url_for("schedule.api_get_appointments") }}'
+            },
+            editable: true, 
+            selectable: true,
+            select: function(info) {
+                let eventData = {};
+                if (info.startStr.includes('T')) {
+                    eventData = {
+                        date: info.startStr.split('T')[0],
+                        startTime: info.startStr.split('T')[1].substring(0, 5),
+                        endTime: info.endStr.split('T')[1].substring(0, 5),
+                    };
+                } else {
+                    eventData = { date: info.startStr, startTime: '09:00', endTime: '10:00' };
+                }
+                window.dispatchEvent(new CustomEvent('open-modal', { detail: eventData }));
+                calendar.unselect();
+            },
+            eventClick: function(info) {
+                const props = info.event.extendedProps;
+                const start = new Date(info.event.start);
+                const end = new Date(info.event.end);
+                const startTime = start.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                const endTime = end.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                const toInputValue = (d) => new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+
+                const eventData = {
+                    id: info.event.id,
+                    title: info.event.title,
+                    technicianName: props.technicianName || 'Não informado',
+                    clientName: props.clientName || 'Tarefa Interna',
+                    eventType: props.eventType || 'MAINTENANCE',
+                    status: props.status || 'SCHEDULED',
+                    timeRange: `${startTime} - ${endTime}`,
+                    start: toInputValue(start),
+                    end: toInputValue(end),
+                    technicianId: props.technicianId || '',
+                    clientId: props.clientId || ''
+                };
+                window.dispatchEvent(new CustomEvent('show-event-details', { detail: eventData }));
+            },
+            height: '100%'
+        });
+        calendar.render();
+        window.calendar = calendar;
+    });
+</script>
+{% endblock %}

@@ -8,6 +8,7 @@ from sqlalchemy import desc
 from flask import url_for
 # Importa a instância 'db' do arquivo de extensões
 from extensions import db
+import secrets
 
 
 
@@ -291,7 +292,7 @@ class Appointment(db.Model):
 
     # Foreign Keys para os relacionamentos
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)       # O técnico/responsável
-    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)   # O cliente/unidade
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=True)   # O cliente/unidade
     equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), nullable=True) # O ativo/equipamento
 
     # Relationships para facilitar o acesso aos objetos
@@ -301,3 +302,22 @@ class Appointment(db.Model):
 
     def __repr__(self):
         return f'<Appointment #{self.id} - {self.title}>'
+    
+
+    
+class SchedulingLink(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_used = db.Column(db.Boolean, default=False)
+    purpose = db.Column(db.String(200), nullable=True) # Ex: "Manutenção Preventiva Ar Condicionado"
+
+    client = db.relationship('Client', backref='scheduling_links')
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.token = secrets.token_urlsafe(32)
+        # Por padrão, o link expira em 7 dias
+        self.expires_at = datetime.utcnow() + timedelta(days=7)    

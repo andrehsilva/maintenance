@@ -13,6 +13,7 @@ from flask_login import current_user
 from sqlalchemy import desc
 from dotenv import load_dotenv
 
+
 # Importa as extensões e os modelos
 from extensions import db, login_manager
 from models import User, Notification
@@ -51,6 +52,7 @@ def register_blueprints(app):
     from routes.stock import stock_bp
     from routes.notifications import notifications_bp
     from routes.qrcode import qrcode_bp
+    from routes.schedule import schedule_bp 
     
     app.register_blueprint(core_bp)
     app.register_blueprint(auth_bp)
@@ -60,6 +62,7 @@ def register_blueprints(app):
     app.register_blueprint(stock_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(qrcode_bp)
+    
 
     # --- Módulos Opcionais ---
     if app.config.get('FEATURE_TASKS_ENABLED'):
@@ -81,6 +84,10 @@ def register_blueprints(app):
     if app.config.get('FEATURE_LEADS_ENABLED'):
         from routes.leads import leads_bp
         app.register_blueprint(leads_bp)
+
+    if app.config.get('FEATURE_SCHEDULE_ENABLED'):
+        from routes.schedule import schedule_bp
+        app.register_blueprint(schedule_bp)
 
 
 def register_commands(app):
@@ -112,6 +119,7 @@ def create_app():
     app.config['FEATURE_TIME_CLOCK_ENABLED'] = os.environ.get('FEATURE_TIME_CLOCK_ENABLED') == 'True'
     app.config['FEATURE_REPORTS_ENABLED'] = os.environ.get('FEATURE_REPORTS_ENABLED') == 'True'
     app.config['FEATURE_LEADS_ENABLED'] = os.environ.get('FEATURE_LEADS_ENABLED') == 'True'
+    app.config['FEATURE_SCHEDULE_ENABLED'] = os.environ.get('FEATURE_SCHEDULE_ENABLED') == 'True'
 
     
     database_url = os.environ.get('DATABASE_URL')
@@ -132,6 +140,7 @@ def create_app():
     # --- 2. INICIALIZAÇÃO DAS EXTENSÕES ---
     db.init_app(app)
     Migrate(app, db)
+  
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'  # Aponta para a rota de login no blueprint 'auth'
     login_manager.login_message = "Por favor, faça o login para acessar esta página."

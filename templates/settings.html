@@ -6,9 +6,6 @@
 <div class="max-w-2xl mx-auto">
     <form method="POST" class="bg-white p-6 rounded-lg shadow-md space-y-6">
         <!-- Token CSRF se você estiver usando -->
-        {% if csrf_token %}
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        {% endif %}
         
         <div>
             <h2 class="text-lg font-semibold text-gray-800">Alertas de Manutenção</h2>

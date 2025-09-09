@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento - {{ client.name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style> 
+        #calendar { height: 80vh; } 
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+<div class="container mx-auto p-4 md:p-8" 
+     x-data="{
+        modalOpen: false,
+        startTime: '',
+        endTime: '',
+        selectedDate: '',
+        contactName: '{{ client.contact_person or client.name }}',
+        notes: '',
+
+        submitSchedule() {
+            if (!this.contactName.trim()) {
+                alert('Por favor, informe um nome para contato.');
+                return;
+            }
+
+            const scheduleData = {
+                token: '{{ link.token }}',
+                start: `${this.selectedDate}T${this.startTime}`,
+                end: `${this.selectedDate}T${this.endTime}`,
+                title: '{{ link.purpose }} - Agendado pelo cliente',
+                notes: `Agendado por: ${this.contactName}. Observações: ${this.notes}`
+            };
+
+            fetch('/api/public/schedule/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(scheduleData)
+            })
+
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Obrigado! Seu horário foi solicitado com sucesso e enviado para aprovação.');
+                    this.modalOpen = false;
+                    calendar.refetchEvents();
+                } else {
+                    alert('Erro: ' + data.message);
+                }
+            })
+            .catch(err => {
+                console.error('Erro de comunicação:', err);
+                alert('Ocorreu um erro de comunicação.');
+            });
+        }
+     }"
+     @open-schedule-modal.window="
+        modalOpen = true;
+        selectedDate = $event.detail.date;
+        startTime = $event.detail.startTime;
+        endTime = $event.detail.endTime;
+     "
+>
+    <div class="text-center mb-6">
+        <i class="fas fa-tools text-4xl text-indigo-500"></i>
+        <h1 class="mt-2 text-2xl font-bold text-gray-800">Agendamento de Serviço</h1>
+        <p class="text-gray-600">Olá, <span class="font-semibold">{{ client.name }}</span>. Selecione um horário vago para <span class="font-semibold">"{{ link.purpose }}"</span>.</p>
+        <p class="text-xs text-gray-400 mt-1">Os horários em cinza já estão ocupados.</p>
+    </div>
+    
+    <div class="bg-white p-4 rounded-lg shadow-md" id="calendar"></div>
+
+    <div x-show="modalOpen" x-cloak class="relative z-10">
+        <div x-show="modalOpen" x-transition.opacity class="fixed inset-0 bg-gray-500 bg-opacity-75"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div @click.away="modalOpen = false" x-show="modalOpen" x-transition class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-lg">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg font-semibold leading-6 text-gray-900">Confirmar Agendamento</h3>
+                        <p class="mt-2 text-sm text-gray-600">
+                            Você selecionou o dia <strong x-text="new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR')"></strong>
+                            das <strong x-text="startTime"></strong> às <strong x-text="endTime"></strong>.
+                        </p>
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label for="contactName" class="block text-sm font-medium">Seu Nome *</label>
+                                <input type="text" x-model="contactName" id="contactName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                            </div>
+                            <div>
+                                <label for="notes" class="block text-sm font-medium">Observações (Opcional)</label>
+                                <textarea x-model="notes" id="notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Ex: O portão estará aberto..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button type="button" @click="submitSchedule()" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto">
+                            Confirmar Horário
+                        </button>
+                        <button type="button" @click="modalOpen = false" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let calendar;
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar');
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            locale: 'pt-br',
+            allDaySlot: false,
+            slotMinTime: '07:00:00',
+            slotMaxTime: '19:00:00',
+            buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia' },
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            events: '{{ url_for("schedule.api_public_get_appointments") }}',
+            selectable: true,
+            selectAllow: function(selectInfo) { return selectInfo.start > new Date(); },
+            selectOverlap: function(event) { return false; },
+            select: function(info) {
+                const eventData = {
+                    date: info.startStr.split('T')[0],
+                    startTime: info.startStr.includes('T') ? info.startStr.split('T')[1].substring(0, 5) : '09:00',
+                    endTime: info.endStr.includes('T') ? info.endStr.split('T')[1].substring(0, 5) : '10:00'
+                };
+                window.dispatchEvent(new CustomEvent('open-schedule-modal', { detail: eventData }));
+                calendar.unselect();
+            }
+        });
+        calendar.render();
+    });
+</script>
+
+</body>
+</html>
