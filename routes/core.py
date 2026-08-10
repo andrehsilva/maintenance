@@ -146,7 +146,7 @@ def manage_settings():
 
     setting_template = db.session.get(Setting, 'whatsapp_message_template')
     default_template = (
-        "Olá, {client_name}! Somos da SacadaGear e gostaríamos de lembrar sobre a manutenção do seu equipamento "
+        "Olá, {client_name}! Somos da Engrena e gostaríamos de lembrar sobre a manutenção do seu equipamento "
         "'{equipment_model} ({equipment_code})', agendada para o dia {maintenance_date}. "
         "Podemos confirmar o agendamento?"
     )

@@ -30,7 +30,7 @@
         
         {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
           {% if page_num %}
-            <a href="{{ url_for(request.endpoint, page=page_num, **request.args.to_dict()) }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold {% if page_num == pagination.page %}bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600{% else %}text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50{% endif %}">{{ page_num }}</a>
+            <a href="{{ url_for(request.endpoint, page=page_num, **request.args.to_dict()) }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold {% if page_num == pagination.page %}bg-primary-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600{% else %}text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50{% endif %}">{{ page_num }}</a>
           {% else %}
             <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">...</span>
           {% endif %}

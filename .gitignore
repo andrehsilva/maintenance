@@ -27,3 +27,11 @@ instance/
 # Arquivos de IDEs
 .vscode/
 .idea/
+*.agent/
+*.cursor/
+.claude/
+.env/
+.agents/
+
+# Node
+node_modules/

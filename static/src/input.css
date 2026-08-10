@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand — indigo (mantém identidade atual) */
+  --color-primary-50: oklch(0.962 0.018 272.314);
+  --color-primary-100: oklch(0.93 0.034 272.788);
+  --color-primary-200: oklch(0.87 0.065 274.039);
+  --color-primary-300: oklch(0.785 0.115 274.713);
+  --color-primary-400: oklch(0.673 0.182 276.935);
+  --color-primary-500: oklch(0.585 0.233 277.117);
+  --color-primary-600: oklch(0.511 0.262 276.966);
+  --color-primary-700: oklch(0.457 0.24 277.023);
+  --color-primary-800: oklch(0.398 0.195 277.366);
+  --color-primary-900: oklch(0.359 0.144 278.697);
+
+  /* Tipografia */
+  --font-sans: "Geist Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Geist Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Sidebar */
+  --color-sidebar: oklch(0.21 0.034 264);
+  --color-sidebar-hover: oklch(0.27 0.04 264);
+}
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  /* Cabeçalho de página */
+  .page-header {
+    @apply mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+  .page-title {
+    @apply text-xl font-bold tracking-tight text-gray-900 sm:text-2xl;
+  }
+  .page-subtitle {
+    @apply mt-1 text-sm text-gray-500;
+  }
+
+  /* Cartão base */
+  .card {
+    @apply rounded-xl border border-gray-200 bg-white shadow-sm;
+  }
+  .card-header {
+    @apply border-b border-gray-100 px-5 py-4;
+  }
+  .card-title {
+    @apply text-sm font-semibold text-gray-900;
+  }
+  .card-body {
+    @apply px-5 py-4;
+  }
+
+  /* Botões */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+  .btn-secondary {
+    @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-300;
+  }
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+  .btn-ghost {
+    @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-300;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  /* Campos de formulário */
+  .label {
+    @apply mb-1 block text-sm font-medium text-gray-700;
+  }
+  .input {
+    @apply block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
+  }
+  .select {
+    @apply block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
+  }
+
+  /* Tabela */
+  .table-wrap {
+    @apply overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm;
+  }
+  .table {
+    @apply min-w-full divide-y divide-gray-200 text-sm;
+  }
+  .table thead th {
+    @apply bg-gray-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500;
+  }
+  .table tbody {
+    @apply divide-y divide-gray-100 bg-white;
+  }
+  .table tbody td {
+    @apply px-4 py-3 align-middle text-gray-700;
+  }
+  .table tbody tr {
+    @apply transition-colors hover:bg-gray-50;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-green {
+    @apply bg-green-100 text-green-800;
+  }
+  .badge-red {
+    @apply bg-red-100 text-red-800;
+  }
+  .badge-yellow {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  .badge-blue {
+    @apply bg-blue-100 text-blue-800;
+  }
+  .badge-gray {
+    @apply bg-gray-100 text-gray-700;
+  }
+
+  /* Navegação da sidebar */
+  .nav-section {
+    @apply mb-1 px-3 pt-5 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500;
+  }
+  .nav-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-sidebar-hover hover:text-white;
+  }
+  .nav-link.active {
+    @apply bg-primary-600 text-white;
+  }
+}

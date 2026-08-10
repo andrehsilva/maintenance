@@ -1,0 +1,26 @@
+{% macro status_badge(status) %}
+{% if status == 'Em dia' %}
+<span class="badge badge-green">Em dia</span>
+{% elif status == 'Próximo do vencimento' %}
+<span class="badge badge-yellow">Próximo</span>
+{% else %}
+<span class="badge badge-red">Vencido</span>
+{% endif %}
+{% endmacro %}
+
+{% macro empty_state(icon='fa-box-open', title='Nada encontrado', description='', action_url=None, action_label=None) %}
+<div class="card">
+    <div class="flex flex-col items-center px-6 py-16 text-center">
+        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+            <i class="fas {{ icon }} text-2xl text-gray-400"></i>
+        </div>
+        <h3 class="mt-4 text-base font-semibold text-gray-900">{{ title }}</h3>
+        {% if description %}<p class="mt-2 max-w-sm text-sm text-gray-500">{{ description }}</p>{% endif %}
+        {% if action_url and action_label %}
+        <a href="{{ action_url }}" class="btn btn-primary mt-6">
+            <i class="fas fa-plus"></i>{{ action_label }}
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}

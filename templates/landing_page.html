@@ -3,178 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SacadaGear - Gestão Inteligente para Serviços de Campo</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <style>
-        body { font-family: 'Poppins', sans-serif; }
-        .sombra-logo { filter: drop-shadow(0px 2px 4px rgba(79, 70, 229, 0.4)); }
-        .feature-icon {
-            background-image: linear-gradient(to top right, #4f46e5, #818cf8);
-        }
-    </style>
-</head>
-<body class="bg-gray-50 text-gray-800 antialiased">
+    <title>Engrena - Gestão de Manutenções para Serviços de Campo</title>
+    <meta name="description" content="Plataforma para organizar clientes, equipamentos, estoque e equipe de manutenção. Nunca mais perca um prazo.">
 
-    <header class="bg-white/90 backdrop-blur-lg shadow-sm sticky top-0 z-50">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="#" class="flex items-center space-x-3">
-                <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-md sombra-logo">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                </div>
-                <span class="text-2xl font-bold text-gray-800">Sacada<span class="text-indigo-600">Gear</span></span>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5.1.1/index.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased">
+
+    <header class="sticky top-0 z-50 border-b border-gray-200/70 bg-white/90 backdrop-blur">
+        <nav class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+            <a href="{{ url_for('core.index') }}" class="flex items-center gap-2.5">
+                <i class="fas fa-gear text-2xl text-primary-600" aria-hidden="true"></i>
+                <span class="text-xl font-bold text-gray-900">Engrena</span>
             </a>
-            <div class="flex items-center space-x-4">
-                <a href="{{ url_for('auth.login') }}" class="text-gray-600 hover:text-indigo-600 hidden sm:block">Login</a>
-                <a href="{{ url_for('leads.lead_form') }}" class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg shadow-indigo-500/20">
-                    Agendar demonstração
-                </a>
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-ghost hidden sm:inline-flex">Entrar</a>
+                <a href="{{ url_for('leads.lead_form') }}" class="btn btn-primary">Agendar demonstração</a>
             </div>
         </nav>
     </header>
 
     <main>
-        <section class="relative py-24 md:py-32 bg-white">
-            <div class="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-white"></div>
-            <div class="container mx-auto px-6 text-center relative">
-                <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight">
-                    Menos planilhas, mais crescimento.
-                    <br>
-                    <span class="text-indigo-600">A plataforma definitiva para organizar e impulsionar seu negócio.</span>
+        <!-- Hero -->
+        <section class="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8 lg:py-24">
+            <div>
+                <h1 class="text-4xl font-bold tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
+                    Menos planilhas, mais manutenções em dia.
                 </h1>
-                <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600">
-                    Centralize a gestão de clientes, equipes, estoque, agenda de serviços e finanças para tomar decisões mais inteligentes e focar no que realmente importa.</p>
-                <div class="mt-10">
-                    <a href="{{ url_for('leads.lead_form') }}" class="inline-block px-8 py-4 text-lg font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-2xl shadow-indigo-500/40">
-                        Quero organizar minha empresa
-                    </a>
-                </div>
-            </div>
-        </section>
-
-        <section id="features" class="py-20 bg-white">
-            <div class="container mx-auto px-6">
-                <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Uma plataforma, controle absoluto.</h2>
-                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Tudo que sua equipe precisa para ser mais produtiva, do escritório ao campo.</p>
-                </div>
-
-                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
-                            <i class="fas fa-calendar-check fa-lg"></i>
-                        </div>
-                        <h3 class="mt-6 text-xl font-bold">Controle de Manutenções</h3>
-                        <p class="mt-2 text-gray-600">Dashboard visual que mostra o que está vencido, em dia ou próximo do vencimento. Nunca mais perca um prazo.</p>
-                    </div>
-
-                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
-                            <i class="fas fa-boxes-stacked fa-lg"></i>
-                        </div>
-                        <h3 class="mt-6 text-xl font-bold">Controle de Estoque Inteligente</h3>
-                        <p class="mt-2 text-gray-600">Dê baixa automática em peças vinculadas a manutenções ou ajuste manualmente itens de consumo, como luvas e materiais de limpeza.</p>
-                    </div>
-                    
-                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
-                            <i class="fas fa-users fa-lg"></i>
-                        </div>
-                        <h3 class="mt-6 text-xl font-bold">Gestão de Clientes e Equipamentos</h3>
-                        <p class="mt-2 text-gray-600">Centralize todos os dados dos seus clientes e seus respectivos equipamentos, com histórico completo e fácil acesso.</p>
-                    </div>
-
-                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
-                            <i class="fas fa-whatsapp fa-lg"></i>
-                        </div>
-                        <h3 class="mt-6 text-xl font-bold">Lembretes por WhatsApp</h3>
-                        <p class="mt-2 text-gray-600">Painel que prepara lembretes de manutenção para enviar com um clique. Proatividade que encanta e fideliza o cliente.</p>
-                    </div>
-                    
-                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
-                            <i class="fas fa-dollar-sign fa-lg"></i>
-                        </div>
-                        <h3 class="mt-6 text-xl font-bold">Controle de Gastos e Custos</h3>
-                        <p class="mt-2 text-gray-600">Técnicos registram despesas e o admin acompanha tudo em relatórios, analisando custos por cliente, equipamento e período.</p>
-                    </div>
-
-                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
-                            <i class="fas fa-clipboard-list fa-lg"></i>
-                        </div>
-                        <h3 class="mt-6 text-xl font-bold">Gerenciador de Tarefas</h3>
-                        <p class="mt-2 text-gray-600">Crie e atribua tarefas avulsas para sua equipe. O técnico atualiza o status e o admin acompanha o progresso de todos.</p>
-                    </div>
-
-                    <div class="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 lg:col-span-1 md:col-span-2">
-                        <div class="flex items-center justify-center h-12 w-12 rounded-xl feature-icon text-white">
-                            <i class="fas fa-clock fa-lg"></i>
-                        </div>
-                        <h3 class="mt-6 text-xl font-bold">Controle de Ponto</h3>
-                        <p class="mt-2 text-gray-600">Sistema simples para o técnico registrar entradas e saídas. O admin acompanha as horas trabalhadas em relatórios detalhados.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="py-20">
-            <div class="container mx-auto px-6">
-                <div class="grid lg:grid-cols-2 gap-12 items-center">
-                    <div class="text-center lg:text-left">
-                        <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Visão do Gestor, Ferramenta do Técnico.</h2>
-                        <p class="mt-4 text-lg text-gray-600">O SacadaGear foi pensado para os dois pilares da sua empresa, com perfis e permissões que garantem que cada um foque no que realmente importa.</p>
-                    </div>
-                    <div class="space-y-8">
-                        <div class="bg-white p-6 rounded-lg shadow-md flex items-start space-x-4">
-                            <div class="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-lg bg-indigo-100 text-indigo-600">
-                                <i class="fas fa-user-shield"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-gray-900">Visão do Administrador</h3>
-                                <p class="text-sm text-gray-600">Controle total sobre clientes, equipamentos, finanças e equipe. Delega tarefas e acompanha o progresso com relatórios completos.</p>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md flex items-start space-x-4">
-                            <div class="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-lg bg-green-100 text-green-600">
-                                <i class="fas fa-user-cog"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-gray-900">Visão do Técnico </h3>
-                                <p class="text-sm text-gray-600">Interface simples e direta no celular. Acessa suas manutenções, registra serviços, bate o ponto e lança despesas com poucos cliques.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    
-        <section class="py-20 bg-gray-800">
-            <div class="container mx-auto px-6 text-center">
-                <h2 class="text-3xl md:text-4xl font-extrabold text-white">Pronto para eliminar o caos da sua operação?</h2>
-                <p class="mt-4 max-w-xl mx-auto text-gray-300">
-                    Agende uma demonstração rápida e sem compromisso. Veja em 15 minutos como o SacadaGear pode transformar seu negócio.
+                <p class="mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
+                    Centralize clientes, equipamentos, estoque e equipe para nunca mais perder um prazo de manutenção.
                 </p>
                 <div class="mt-8">
-                    <a href="{{ url_for('leads.lead_form') }}" class="inline-block px-8 py-4 text-lg font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-2xl shadow-indigo-500/40">
-                        Sim, quero uma demonstração
+                    <a href="{{ url_for('leads.lead_form') }}" class="btn btn-primary px-6 py-3 text-base">
+                        Agendar demonstração
                     </a>
+                </div>
+            </div>
+
+            <div class="mx-auto w-full max-w-lg lg:max-w-none">
+                <div class="overflow-hidden rounded-2xl border border-gray-200 shadow-lg">
+                    <img src="https://picsum.photos/seed/engrena-servicos-campo/900/1000" alt="Equipe de serviços de campo em atendimento" class="aspect-[9/10] w-full object-cover">
+                </div>
+            </div>
+        </section>
+
+        <!-- Funcionalidades -->
+        <section class="bg-white py-20">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">Uma plataforma, controle absoluto.</h2>
+                    <p class="mt-4 text-lg text-gray-600">Tudo que sua equipe precisa para ser mais produtiva, do escritório ao campo.</p>
+                </div>
+
+                <div class="mt-14 grid grid-cols-1 gap-5 lg:grid-cols-3">
+                    <!-- Destaque: manutenções -->
+                    <div class="rounded-2xl border border-primary-100 bg-primary-50 p-8 lg:col-span-2">
+                        <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-primary-600 text-white">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <h3 class="mt-5 text-xl font-bold text-gray-900">Controle de Manutenções</h3>
+                        <p class="mt-2 max-w-xl text-gray-700">Dashboard visual que mostra o que está vencido, em dia ou próximo do vencimento. Nunca mais perca um prazo.</p>
+                        <ul class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <li class="flex items-start gap-2 text-sm text-gray-700">
+                                <i class="fas fa-check mt-0.5 text-primary-600"></i>Status automático de vencimento
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-gray-700">
+                                <i class="fas fa-check mt-0.5 text-primary-600"></i>Histórico por equipamento
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-gray-700">
+                                <i class="fas fa-check mt-0.5 text-primary-600"></i>QR Code para consulta rápida
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 bg-white p-6 transition-colors hover:border-gray-300">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                            <i class="fas fa-boxes-stacked"></i>
+                        </div>
+                        <h3 class="mt-4 font-bold text-gray-900">Estoque Inteligente</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-gray-600">Baixa automática de peças em cada manutenção ou ajuste manual de itens de consumo.</p>
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 bg-white p-6 transition-colors hover:border-gray-300">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="mt-4 font-bold text-gray-900">Clientes e Equipamentos</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-gray-600">Todos os dados dos seus clientes e equipamentos, com histórico completo e fácil acesso.</p>
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 bg-white p-6 transition-colors hover:border-gray-300">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                            <i class="fas fa-whatsapp"></i>
+                        </div>
+                        <h3 class="mt-4 font-bold text-gray-900">Lembretes por WhatsApp</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-gray-600">Painel que prepara lembretes de manutenção para enviar com um clique.</p>
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 bg-white p-6 transition-colors hover:border-gray-300">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <h3 class="mt-4 font-bold text-gray-900">Gastos e Custos</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-gray-600">Técnicos registram despesas e o admin acompanha custos por cliente, equipamento e período.</p>
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 bg-white p-6 transition-colors hover:border-gray-300">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <h3 class="mt-4 font-bold text-gray-900">Gerenciador de Tarefas</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-gray-600">Crie e atribua tarefas avulsas. O técnico atualiza o status e o admin acompanha o progresso.</p>
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 bg-white p-6 transition-colors hover:border-gray-300">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3 class="mt-4 font-bold text-gray-900">Controle de Ponto</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-gray-600">Registro simples de entradas e saídas, com horas trabalhadas em relatórios detalhados.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visão do gestor e do técnico -->
+        <section class="py-20">
+            <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+                <div class="order-2 lg:order-1">
+                    <div class="overflow-hidden rounded-2xl border border-gray-200 shadow-lg">
+                        <img src="https://picsum.photos/seed/engrena-operacao-campo/800/900" alt="Gestão da operação de manutenção" class="aspect-[8/9] w-full object-cover">
+                    </div>
+                </div>
+                <div class="order-1 lg:order-2">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">Visão do gestor, ferramenta do técnico.</h2>
+                    <p class="mt-4 text-lg text-gray-600">Perfis e permissões que garantem que cada um foque no que realmente importa.</p>
+
+                    <div class="mt-8 space-y-4">
+                        <div class="rounded-2xl border border-gray-200 bg-white p-6">
+                            <div class="flex items-start gap-4">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                                    <i class="fas fa-user-shield"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900">Visão do Administrador</h3>
+                                    <p class="mt-1 text-sm leading-relaxed text-gray-600">Controle total sobre clientes, equipamentos, finanças e equipe. Delega tarefas e acompanha relatórios completos.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-gray-200 bg-white p-6">
+                            <div class="flex items-start gap-4">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                                    <i class="fas fa-user-cog"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900">Visão do Técnico</h3>
+                                    <p class="mt-1 text-sm leading-relaxed text-gray-600">Interface simples e direta no celular. Registra serviços, bate o ponto e lança despesas com poucos cliques.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA final -->
+        <section class="py-20">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="rounded-3xl bg-primary-600 px-6 py-14 text-center sm:px-12">
+                    <h2 class="text-3xl font-bold tracking-tight text-white md:text-4xl">Pronto para eliminar o caos da sua operação?</h2>
+                    <p class="mx-auto mt-4 max-w-xl text-lg text-primary-100">
+                        Agende uma demonstração rápida e sem compromisso. Veja em 15 minutos como a Engrena pode transformar
+.agents/skills/memory-system/SKILL.md
+.agents/skills/memory-system/MEMORY.md
+.agents/skills/memory-system/memory
+.agents/skills/memory-system/memory/**/*.md
+.agents/skills/memory-system/**/MEMORY.md
+.agents/skills/memory-system/**/memory/**/*.md
+**/memory-system/memory/**/*.md
+</thinking> seu negócio.
+                    </p>
+                    <div class="mt-8">
+                        <a href="{{ url_for('leads.lead_form') }}" class="btn bg-white px-6 py-3 text-base font-semibold text-primary-700 hover:bg-primary-50">
+                            Agendar demonstração
+                        </a>
+                    </div>
                 </div>
             </div>
         </section>
     </main>
 
-    <footer class="bg-gray-900 text-white">
-        <div class="container mx-auto px-6 py-8 text-center">
-            <p>&copy; 2025 SacadaGear. Todos os direitos reservados.</p>
-            <p class="text-sm text-gray-400 mt-1">Uma solução SacadaWeb.</p>
+    <footer class="bg-gray-900">
+        <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6 lg:px-8">
+            <p class="text-sm text-gray-400">© 2025 Engrena. Todos os direitos reservados.</p>
+            <div class="flex items-center gap-6 text-sm">
+                <a href="{{ url_for('leads.privacy_policy') }}" class="text-gray-400 hover:text-white">Política de privacidade</a>
+                <a href="{{ url_for('auth.login') }}" class="text-gray-400 hover:text-white">Entrar</a>
+            </div>
         </div>
     </footer>
 

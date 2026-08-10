@@ -1,143 +1,131 @@
 {% extends "base.html" %}
+{% from "_components.html" import status_badge %}
 
-{% block title %}Dashboard - SacadaGear{% endblock %}
+{% block title %}Dashboard - Engrena{% endblock %}
 {% block header %}Controle de manutenções{% endblock %}
 
 {% block content %}
 <div class="space-y-8">
 
     {% if current_user.role == 'admin' %}
-    <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8">
-        <h2 class="text-base font-semibold leading-6 text-gray-900 mb-4">Indicadores Estratégicos (Mês Atual)</h2>
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="overflow-hidden rounded-lg bg-white shadow">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0"><i class="fas fa-wrench text-2xl text-gray-400"></i></div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-gray-500">Manutenções Realizadas</dt>
-                                <dd><div class="text-lg font-medium text-gray-900">{{ monthly_kpis.maintenances_count }}</div></dd>
-                            </dl>
+    <section class="card bg-gradient-to-br from-primary-50 to-white">
+        <div class="card-body">
+            <div class="mb-5">
+                <h2 class="card-title text-base">Indicadores Estratégicos</h2>
+                <p class="mt-1 text-xs text-gray-500">Mês atual</p>
+            </div>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                            <i class="fas fa-wrench"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="truncate text-xs font-medium text-gray-500">Manutenções Realizadas</p>
+                            <p class="tabular text-xl font-semibold text-gray-900">{{ monthly_kpis.maintenances_count }}</p>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="overflow-hidden rounded-lg bg-white shadow">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0"><i class="fas fa-dollar-sign text-2xl text-green-500"></i></div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-gray-500">Receita de Serviços</dt>
-                                <dd><div class="text-lg font-medium text-gray-900">R$ {{ "%.2f"|format(monthly_kpis.revenue)|replace('.', ',') }}</div></dd>
-                            </dl>
+                <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-700">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="truncate text-xs font-medium text-gray-500">Receita de Serviços</p>
+                            <p class="tabular text-xl font-semibold text-gray-900">R$ {{ "%.2f"|format(monthly_kpis.revenue)|replace('.', ',') }}</p>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="overflow-hidden rounded-lg bg-white shadow">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0"><i class="fas fa-receipt text-2xl text-red-500"></i></div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-gray-500">Despesas da Equipe</dt>
-                                <dd><div class="text-lg font-medium text-gray-900">R$ {{ "%.2f"|format(monthly_kpis.expenses)|replace('.', ',') }}</div></dd>
-                            </dl>
+                <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="truncate text-xs font-medium text-gray-500">Despesas da Equipe</p>
+                            <p class="tabular text-xl font-semibold text-gray-900">R$ {{ "%.2f"|format(monthly_kpis.expenses)|replace('.', ',') }}</p>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="overflow-hidden rounded-lg bg-white shadow">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0"><i class="fas fa-shield-alt text-2xl text-blue-500"></i></div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-gray-500">Preventivas / Corretivas</dt>
-                                <dd>
-                                    <div class="text-lg font-medium text-gray-900">
-                                        <span class="text-green-600">{{ monthly_kpis.preventive_count }}</span> / 
-                                        <span class="text-red-600">{{ monthly_kpis.corrective_count }}</span>
-                                    </div>
-                                </dd>
-                            </dl>
+                <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="truncate text-xs font-medium text-gray-500">Preventivas / Corretivas</p>
+                            <p class="tabular text-xl font-semibold text-gray-900">
+                                <span class="text-green-600">{{ monthly_kpis.preventive_count }}</span>
+                                <span class="text-gray-300">/</span>
+                                <span class="text-red-600">{{ monthly_kpis.corrective_count }}</span>
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
     {% endif %}
-    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <a href="{{ url_for('core.dashboard', client_id=filters.get('client_id')) }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
-            <div class="overflow-hidden rounded-lg bg-white shadow {% if not active_filter %}border-2 border-indigo-500{% else %}border border-transparent{% endif %}">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0"><i class="fas fa-microchip text-2xl text-gray-400"></i></div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-gray-500">Total de Equipamentos</dt>
-                                <dd><div class="text-lg font-medium text-gray-900">{{ stats.total }}</div></dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </a>
-        <a href="{{ url_for('core.dashboard', status='em_dia', client_id=filters.get('client_id')) }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
-            <div class="overflow-hidden rounded-lg bg-white shadow {% if active_filter == 'em_dia' %}border-2 border-green-500{% else %}border border-transparent{% endif %}">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0"><i class="fas fa-check-circle text-2xl text-green-500"></i></div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-gray-500">Em Dia</dt>
-                                <dd><div class="text-lg font-medium text-gray-900">{{ stats.em_dia }}</div></dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </a>
-        <a href="{{ url_for('core.dashboard', status='proximo', client_id=filters.get('client_id')) }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
-            <div class="overflow-hidden rounded-lg bg-white shadow {% if active_filter == 'proximo' %}border-2 border-yellow-500{% else %}border border-transparent{% endif %}">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0"><i class="fas fa-exclamation-triangle text-2xl text-yellow-500"></i></div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-gray-500">Próximo do Vencimento</dt>
-                                <dd><div class="text-lg font-medium text-gray-900">{{ stats.proximo }}</div></dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </a>
-        <a href="{{ url_for('core.dashboard', status='vencido', client_id=filters.get('client_id')) }}" class="block transition-transform duration-200 ease-in-out hover:scale-105">
-            <div class="overflow-hidden rounded-lg bg-white shadow {% if active_filter == 'vencido' %}border-2 border-red-500{% else %}border border-transparent{% endif %}">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0"><i class="fas fa-times-circle text-2xl text-red-500"></i></div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-gray-500">Vencidos</dt>
-                                <dd><div class="text-lg font-medium text-gray-900">{{ stats.vencido }}</div></dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </a>
-    </div>
 
-    <div>
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 mt-8">
-            <div class="flex-auto">
-                <h2 class="text-base font-semibold leading-6 text-gray-900">Acompanhamento Operacional</h2>
-                <p class="mt-2 text-sm text-gray-700">
+    <section>
+        <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <a href="{{ url_for('core.dashboard', client_id=filters.get('client_id')) }}"
+               class="card p-4 transition-all hover:-translate-y-0.5 hover:shadow-md {% if not active_filter %}ring-2 ring-primary-600{% endif %}">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                        <i class="fas fa-microchip"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-medium text-gray-500">Total de Equipamentos</p>
+                        <p class="tabular text-xl font-semibold text-gray-900">{{ stats.total }}</p>
+                    </div>
+                </div>
+            </a>
+            <a href="{{ url_for('core.dashboard', status='em_dia', client_id=filters.get('client_id')) }}"
+               class="card p-4 transition-all hover:-translate-y-0.5 hover:shadow-md {% if active_filter == 'em_dia' %}ring-2 ring-green-500{% endif %}">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-700">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-medium text-gray-500">Em Dia</p>
+                        <p class="tabular text-xl font-semibold text-gray-900">{{ stats.em_dia }}</p>
+                    </div>
+                </div>
+            </a>
+            <a href="{{ url_for('core.dashboard', status='proximo', client_id=filters.get('client_id')) }}"
+               class="card p-4 transition-all hover:-translate-y-0.5 hover:shadow-md {% if active_filter == 'proximo' %}ring-2 ring-yellow-500{% endif %}">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-yellow-100 text-yellow-700">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-medium text-gray-500">Próximo do Vencimento</p>
+                        <p class="tabular text-xl font-semibold text-gray-900">{{ stats.proximo }}</p>
+                    </div>
+                </div>
+            </a>
+            <a href="{{ url_for('core.dashboard', status='vencido', client_id=filters.get('client_id')) }}"
+               class="card p-4 transition-all hover:-translate-y-0.5 hover:shadow-md {% if active_filter == 'vencido' %}ring-2 ring-red-500{% endif %}">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-medium text-gray-500">Vencidos</p>
+                        <p class="tabular text-xl font-semibold text-gray-900">{{ stats.vencido }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <section>
+        <div class="page-header">
+            <div>
+                <h2 class="page-title">Acompanhamento Operacional</h2>
+                <p class="page-subtitle">
                     {% if not active_filter and not filters.get('client_id') %}
                         Exibindo todos os equipamentos.
                     {% else %}
@@ -146,169 +134,150 @@
                             do cliente selecionado
                         {% endif %}
                         {% if active_filter %}
-                            com manutenção <span class="font-bold 
-                            {% if active_filter == 'em_dia' %}text-green-600{% endif %}
-                            {% if active_filter == 'proximo' %}text-yellow-600{% endif %}
-                            {% if active_filter == 'vencido' %}text-red-600{% endif %}
-                            ">{{ active_filter.replace('_', ' ') }}</span>
-                        {% endif %}.
+                            com manutenção
+                            <span class="font-semibold
+                                {% if active_filter == 'em_dia' %}text-green-600{% endif %}
+                                {% if active_filter == 'proximo' %}text-yellow-600{% endif %}
+                                {% if active_filter == 'vencido' %}text-red-600{% endif %}
+                            ">{{ active_filter.replace('_', ' ') }}</span>.
+                        {% endif %}
                     {% endif %}
                 </p>
             </div>
-            <div class="mt-4 sm:mt-0">
-                <form method="GET" action="{{ url_for('core.dashboard') }}" class="flex items-center gap-2">
-                    <div class="relative">
-                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <i class="fas fa-building text-gray-400"></i>
-                        </div>
-                        <select name="client_id" onchange="this.form.submit()" class="block w-full sm:w-64 appearance-none rounded-md border-0 py-2 pl-10 pr-8 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
-                            <option value="">Filtrar por Todos os Clientes</option>
-                            {% for client in clients %}
-                                <option value="{{ client.id }}" {% if filters.get('client_id')|string == client.id|string %}selected{% endif %}>
-                                    {{ client.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                            <i class="fas fa-chevron-down text-gray-400 h-4 w-4"></i>
-                        </div>
+            <form method="GET" action="{{ url_for('core.dashboard') }}" class="flex items-center gap-2">
+                <div class="relative">
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <i class="fas fa-building text-gray-400 text-sm"></i>
                     </div>
-                    <a href="{{ url_for('core.dashboard') }}" title="Limpar Filtro" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-500 shadow-sm hover:bg-gray-50">
-                        <i class="fas fa-times"></i>
-                    </a>
-                </form>
-            </div>
+                    <select name="client_id" onchange="this.form.submit()" class="select pl-9 pr-8 sm:w-64">
+                        <option value="">Filtrar por Todos os Clientes</option>
+                        {% for client in clients %}
+                            <option value="{{ client.id }}" {% if filters.get('client_id')|string == client.id|string %}selected{% endif %}>
+                                {{ client.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                        <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                    </div>
+                </div>
+                <a href="{{ url_for('core.dashboard') }}" title="Limpar Filtro" class="btn btn-secondary btn-sm h-10 w-10 !px-0">
+                    <i class="fas fa-times"></i>
+                </a>
+            </form>
         </div>
 
+        {% if equipments.items %}
         <div class="space-y-4">
-            {% if equipments.items %}
-                {% for equipment in equipments.items %}
-                <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="md:col-span-2">
-                            <div class="flex items-center gap-4">
-                                <a href="{{ url_for('equipment.equipment_history', equipment_id=equipment.id) }}" class="text-lg font-bold text-gray-900 hover:text-indigo-600 transition-colors duration-200">
-                                    {{ equipment.code }} - {{ equipment.model }}
+            {% for equipment in equipments.items %}
+            <div class="card p-4 transition-shadow hover:shadow-md sm:p-5">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div class="md:col-span-2">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <a href="{{ url_for('equipment.equipment_history', equipment_id=equipment.id) }}" class="text-base font-semibold text-gray-900 hover:text-primary-700 sm:text-lg">
+                                {{ equipment.code }} - {{ equipment.model }}
+                            </a>
+                            {{ status_badge(equipment.status) }}
+                        </div>
+                        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
+                            <span><i class="fas fa-building mr-1.5 text-gray-400"></i>{{ equipment.client.name }}</span>
+                            <span class="hidden text-gray-300 sm:inline">|</span>
+                            <span><i class="fas fa-user mr-1.5 text-gray-400"></i>{{ equipment.client.contact_person or 'N/A' }}</span>
+                        </div>
+                        <div class="mt-3 flex flex-wrap items-center gap-2">
+                            <a href="https://maps.google.com/?q={{ (equipment.client.address + ' ' + equipment.location)|urlencode }}" target="_blank"
+                               class="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200">
+                                <i class="fas fa-map-marker-alt"></i>{{ equipment.location }}
+                            </a>
+                            {% if equipment.client.phone %}
+                                {% set cleaned_phone = equipment.client.phone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '') %}
+                                <a href="https://wa.me/55{{ cleaned_phone }}" target="_blank"
+                                   class="inline-flex items-center gap-1.5 rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-800 hover:bg-green-200">
+                                    <i class="fab fa-whatsapp"></i>{{ equipment.client.phone }}
                                 </a>
-                                {% if equipment.status == 'Em dia' %}
-                                <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Em dia</span>
-                                {% elif equipment.status == 'Próximo do vencimento' %}
-                                <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Próximo do vencimento</span>
-                                {% else %}
-                                <span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">Vencido</span>
-                                {% endif %}
-                            </div>
-                            <div class="mt-2 text-sm text-gray-600 flex flex-wrap items-center gap-2">
-                                <span><i class="fas fa-building mr-1 text-gray-400"></i>{{ equipment.client.name }}</span>
-                                <span class="text-gray-300 hidden sm:inline">|</span>
-                                <span><i class="fas fa-user fa-fw mr-1 text-gray-400"></i>{{ equipment.client.contact_person or 'N/A' }}</span>
-                            </div>
-                            <div class="mt-2 flex flex-wrap items-center gap-2">
-                                {% if equipment.client.address %}
-                                    <a href="https://maps.google.com/?q={{ (equipment.client.address + ' ' + equipment.location)|urlencode }}" target="_blank" class="inline-flex items-center gap-x-1.5 rounded-md bg-blue-500 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
-                                        <i class="fas fa-map-marker-alt fa-fw"></i>
-                                        {{ equipment.location }}
-                                    </a>
-                                {% else %}
-                                    <span class="inline-flex items-center gap-x-1.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-                                        <i class="fas fa-map-marker-alt fa-fw"></i>
-                                        {{ equipment.location }}
-                                    </span>
-                                {% endif %}
+                            {% else %}
+                                <span class="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-500">
+                                    <i class="fas fa-phone"></i>N/A
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="mt-3 text-xs text-gray-500">
+                            {% set last_record = equipment.last_maintenance_record %}
+                            {{ equipment.maintenance_history.count() }} registro(s) de manutenção.
+                            {% if last_record %}
+                            Último por: <span class="font-medium text-gray-700">{{ last_record.technician.username }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
 
-                                {% if equipment.client.phone %}
-                                    {% set cleaned_phone = equipment.client.phone.replace('(', '').replace(')', '').replace('-', '').replace(' ', '') %}
-                                    <a href="https://wa.me/55{{ cleaned_phone }}" target="_blank" class="inline-flex items-center gap-x-1.5 rounded-md bg-green-500 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-green-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700">
-                                        <i class="fab fa-whatsapp fa-fw"></i>
-                                        {{ equipment.client.phone }}
-                                    </a>
-                                {% else %}
-                                    <span class="inline-flex items-center gap-x-1.5 rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-                                        <i class="fas fa-phone fa-fw"></i>
-                                        N/A
-                                    </span>
-                                {% endif %}
+                    <div class="flex flex-col justify-between gap-4 md:items-end">
+                        <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-1 md:gap-y-2 md:text-right">
+                            <div>
+                                <span class="block text-xs font-medium text-gray-500">Última Manutenção</span>
+                                <span class="tabular font-medium text-gray-800">{{ equipment.last_maintenance_date.strftime('%d/%m/%Y') if equipment.last_maintenance_date else 'N/A' }}</span>
                             </div>
-                            <div class="mt-3 text-xs text-gray-500">
-                                {% set last_record = equipment.last_maintenance_record %}
-                                {{ equipment.maintenance_history.count() }} registro(s) de manutenção. 
-                                {% if last_record %}
-                                Último por: <span class="font-medium">{{ last_record.technician.username }}</span>
-                                {% endif %}
+                            <div>
+                                <span class="block text-xs font-medium text-gray-500">Próxima Manutenção</span>
+                                <span class="tabular font-medium text-gray-800">{{ equipment.next_maintenance_date.strftime('%d/%m/%Y') }}</span>
                             </div>
                         </div>
-                        
-                        <div class="md:col-span-1 flex flex-col justify-between">
-                            <div class="text-sm text-gray-600 space-y-2 text-left md:text-right">
-                                <div>
-                                    <span class="font-medium text-gray-800">Última Manutenção:</span>
-                                    <span class="ml-2">{{ equipment.last_maintenance_date.strftime('%d/%m/%Y') if equipment.last_maintenance_date else 'N/A' }}</span>
-                                </div>
-                                <div>
-                                    <span class="font-medium text-gray-800">Próxima Manutenção:</span>
-                                    <span class="ml-2">{{ equipment.next_maintenance_date.strftime('%d/%m/%Y') }}</span>
-                                </div>
-                            </div>
-                            <div class="mt-4 flex items-center justify-start md:justify-end gap-2">
-                                <a href="{{ url_for('equipment.equipment_history', equipment_id=equipment.id) }}" title="Histórico" class="flex items-center justify-center h-8 w-8 rounded bg-gray-600 text-white shadow-sm hover:bg-gray-700"><i class="fas fa-list-alt text-xs"></i></a>
-                                <a href="{{ url_for('equipment.new_maintenance_history', equipment_id=equipment.id) }}" title="Registrar Manutenção" class="flex items-center justify-center h-8 w-8 rounded bg-blue-600 text-white shadow-sm hover:bg-blue-700"><i class="fas fa-wrench text-xs"></i></a>
-                                {% if equipment.client.address %}
-                                <a href="https://maps.google.com/?q={{ (equipment.client.address + ' ' + equipment.location)|urlencode }}" target="_blank" title="Ver no Mapa" class="flex items-center justify-center h-8 w-8 rounded bg-green-600 text-white shadow-sm hover:bg-green-700">
-                                    <i class="fas fa-map-location-dot text-xs"></i>
-                                </a>
-                                {% endif %}
-                                {% if current_user.role == 'admin' %}
-                                <a href="{{ url_for('qrcode.display_qrcode', code=equipment.code) }}" title="Gerar QR Code" class="flex items-center justify-center h-8 w-8 rounded bg-gray-800 text-white shadow-sm hover:bg-black"><i class="fas fa-qrcode text-xs"></i></a>
-                                {% endif %}
-                            </div>
+                        <div class="flex items-center gap-2 md:justify-end">
+                            <a href="{{ url_for('equipment.equipment_history', equipment_id=equipment.id) }}" title="Histórico"
+                               class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700">
+                                <i class="fas fa-list-alt text-sm"></i>
+                            </a>
+                            <a href="{{ url_for('equipment.new_maintenance_history', equipment_id=equipment.id) }}" title="Registrar Manutenção"
+                               class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white hover:bg-primary-700">
+                                <i class="fas fa-wrench text-sm"></i>
+                            </a>
+                            {% if equipment.client.address %}
+                            <a href="https://maps.google.com/?q={{ (equipment.client.address + ' ' + equipment.location)|urlencode }}" target="_blank" title="Ver no Mapa"
+                               class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700">
+                                <i class="fas fa-map-location-dot text-sm"></i>
+                            </a>
+                            {% endif %}
+                            {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('qrcode.display_qrcode', code=equipment.code) }}" title="Gerar QR Code"
+                               class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gray-800 text-white hover:bg-gray-900">
+                                <i class="fas fa-qrcode text-sm"></i>
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-                {% endfor %}
-            {% else %}
-            <div class="text-center py-12">
-                <i class="fas fa-box-open text-5xl text-gray-300"></i>
-                <h3 class="mt-4 text-lg font-semibold text-gray-900">Nenhum Equipamento Encontrado</h3>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="flex flex-col items-center px-6 py-16 text-center">
+                <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                    <i class="fas fa-box-open text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="mt-4 text-base font-semibold text-gray-900">Nenhum Equipamento Encontrado</h3>
                 {% if active_filter or filters.get('client_id') %}
-                    <p class="mt-2 text-sm text-gray-500">
+                    <p class="mt-2 max-w-sm text-sm text-gray-500">
                         Não há equipamentos que correspondam ao filtro selecionado.
-                        <a href="{{ url_for('core.dashboard') }}" class="font-medium text-indigo-600 hover:text-indigo-500">Limpar filtro</a>
+                        <a href="{{ url_for('core.dashboard') }}" class="font-medium text-primary-600 hover:text-primary-700">Limpar filtro</a>
                     </p>
                 {% elif current_user.role == 'admin' %}
-                    <p class="mt-2 text-sm text-gray-500">
+                    <p class="mt-2 max-w-sm text-sm text-gray-500">
                         Parece que não há nada aqui. Que tal começar cadastrando o primeiro equipamento?
                     </p>
-                    <div class="mt-6">
-                        <a href="{{ url_for('equipment.new_equipment') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
-                            <i class="fas fa-plus -ml-0.5 mr-1.5 h-5 w-5"></i>
-                            Cadastrar Novo Equipamento
-                        </a>
-                    </div>
+                    <a href="{{ url_for('equipment.new_equipment') }}" class="btn btn-primary mt-6">
+                        <i class="fas fa-plus"></i>Cadastrar Novo Equipamento
+                    </a>
                 {% else %}
-                    <p class="mt-2 text-sm text-gray-500">
+                    <p class="mt-2 max-w-sm text-sm text-gray-500">
                         Nenhum equipamento foi atribuído a você no momento.
                     </p>
                 {% endif %}
             </div>
-            {% endif %}
-        </div>
-
-        {% if equipments.pages > 1 %}
-        <div class="flex justify-center mt-6 flex-wrap gap-2">
-            {% if equipments.has_prev %}
-                <a href="{{ url_for('core.dashboard', page=equipments.prev_num, status=active_filter, client_id=filters.get('client_id')) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">« Anterior</a>
-            {% endif %}
-
-            {% for p in range(1, equipments.pages + 1) %}
-                <a href="{{ url_for('core.dashboard', page=p, status=active_filter, client_id=filters.get('client_id')) }}"
-                   class="px-3 py-1 rounded {% if p == equipments.page %}bg-indigo-600 text-white{% else %}bg-gray-200 hover:bg-gray-300{% endif %}">{{ p }}</a>
-            {% endfor %}
-
-            {% if equipments.has_next %}
-                <a href="{{ url_for('core.dashboard', page=equipments.next_num, status=active_filter, client_id=filters.get('client_id')) }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Próximo »</a>
-            {% endif %}
         </div>
         {% endif %}
-    </div>
+
+        {% set pagination = equipments %}
+        {% include "_pagination.html" with context %}
+    </section>
 </div>
 {% endblock %}
