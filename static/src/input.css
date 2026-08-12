@@ -26,6 +26,7 @@
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
   }
+  [x-cloak] { display: none !important; }
 }
 
 @utility tabular {
@@ -130,13 +131,40 @@
   }
 
   /* Navegação da sidebar */
-  .nav-section {
-    @apply mb-1 px-3 pt-5 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500;
-  }
   .nav-link {
     @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-sidebar-hover hover:text-white;
   }
   .nav-link.active {
     @apply bg-primary-600 text-white;
+  }
+
+  /* Logotipo Engrena — engrenagem gira suavemente no hover */
+  .engrena-logo__cog {
+    transform-origin: 50% 50%;
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .engrena-logo:hover .engrena-logo__cog {
+    animation: engrena-spin 6s linear infinite;
+  }
+  @keyframes engrena-spin {
+    to { transform: rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .engrena-logo:hover .engrena-logo__cog { animation: none; }
+  }
+
+  /* Reveal suave ao rolar a página (CSS scroll-driven) */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .reveal {
+        animation: engrena-reveal linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 35%;
+      }
+      @keyframes engrena-reveal {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    }
   }
 }

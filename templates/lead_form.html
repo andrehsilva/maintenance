@@ -9,15 +9,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5.1.1/index.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    {% from "_components.html" import logo %}
 </head>
 <body class="min-h-[100dvh] bg-gray-100">
     <div class="flex min-h-[100dvh] items-center justify-center px-4 py-10">
         <div class="w-full max-w-lg">
-            <div class="mb-8 text-center">
-                <a href="{{ url_for('core.index') }}" class="inline-flex items-center gap-2.5">
-                    <i class="fas fa-gear text-3xl text-primary-600" aria-hidden="true"></i>
-                    <span class="text-2xl font-bold text-gray-900">Engrena</span>
-                </a>
+            <div class="mb-8 flex justify-center">
+                {{ logo(size='lg', variant='light', href=url_for('core.index')) }}
             </div>
 
             <div class="card p-6 sm:p-8">
