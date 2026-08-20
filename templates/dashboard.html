@@ -149,7 +149,7 @@
                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <i class="fas fa-building text-gray-400 text-sm"></i>
                     </div>
-                    <select name="client_id" onchange="this.form.submit()" class="select pl-9 pr-8 sm:w-64">
+                    <select name="client_id" onchange="this.form.submit()" class="select appearance-none pl-9 pr-8 sm:w-64">
                         <option value="">Filtrar por Todos os Clientes</option>
                         {% for client in clients %}
                             <option value="{{ client.id }}" {% if filters.get('client_id')|string == client.id|string %}selected{% endif %}>

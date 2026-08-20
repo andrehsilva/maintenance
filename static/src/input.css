@@ -138,6 +138,20 @@
     @apply bg-primary-600 text-white;
   }
 
+  /* Shell de layout — o padding lateral acompanha o sidebar,
+     aplicado via CSS (não Alpine) para evitar saltos no carregamento */
+  .app-shell {
+    transition: padding 0.3s ease-in-out;
+  }
+  @media (min-width: 1024px) {
+    .app-shell {
+      padding-left: 16rem;
+    }
+    .app-shell.app-shell--collapsed {
+      padding-left: 0;
+    }
+  }
+
   /* Logotipo Engrena — engrenagem gira suavemente no hover */
   .engrena-logo__cog {
     transform-origin: 50% 50%;
@@ -153,18 +167,16 @@
     .engrena-logo:hover .engrena-logo__cog { animation: none; }
   }
 
-  /* Reveal suave ao rolar a página (CSS scroll-driven) */
-  @media (prefers-reduced-motion: no-preference) {
-    @supports (animation-timeline: view()) {
-      .reveal {
-        animation: engrena-reveal linear both;
-        animation-timeline: view();
-        animation-range: entry 0% entry 35%;
-      }
-      @keyframes engrena-reveal {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-    }
-  }
+}
+
+/* Transição suave de entrada das páginas (mascara o reload) */
+@keyframes page-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+main {
+  animation: page-enter 0.3s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  main { animation: none; }
 }

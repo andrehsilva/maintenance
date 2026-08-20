@@ -170,21 +170,6 @@
             background: linear-gradient(90deg, transparent, var(--border), transparent);
         }
 
-        /* ── Scroll reveal ── */
-        @media (prefers-reduced-motion: no-preference) {
-            @supports (animation-timeline: view()) {
-                .reveal-up {
-                    animation: revealUp linear both;
-                    animation-timeline: view();
-                    animation-range: entry entry 30%;
-                }
-                @keyframes revealUp {
-                    0% { opacity:0; transform: translateY(24px); }
-                    100% { opacity:1; transform: translateY(0); }
-                }
-            }
-        }
-
         /* ── Terminal-style number stat ── */
         .stat-number {
             font-size: 2.5rem;
@@ -236,7 +221,7 @@
             <div class="hero-glow" style="bottom:-200px;right:-100px;opacity:.5;"></div>
 
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" style="display:grid;gap:4rem;align-items:center;" class="lg:grid-cols-2">
-                <div class="reveal-up" style="max-width:640px;">
+                <div style="max-width:640px;">
                     <div class="lp-badge" style="margin-bottom:1.5rem;">
                         <i class="fas fa-bolt" style="font-size:.6rem;"></i>
                         Plataforma de Manutenção
@@ -261,7 +246,7 @@
                 </div>
 
                 <!-- Stats panel -->
-                <div class="reveal-up" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
                     <div class="tech-card" style="padding:1.75rem;grid-column:span 2;">
                         <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
                             <div class="icon-box"><i class="fas fa-chart-line"></i></div>
@@ -286,7 +271,7 @@
         <!-- ── FEATURES ── -->
         <section style="padding:5rem 0;">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div class="reveal-up" style="text-align:center;margin-bottom:3.5rem;">
+                <div style="text-align:center;margin-bottom:3.5rem;">
                     <span class="section-label">Funcionalidades</span>
                     <h2 style="font-size:clamp(1.75rem,3vw,2.5rem);font-weight:800;color:#f1f5f9;letter-spacing:-.02em;">Uma plataforma, controle absoluto.</h2>
                     <p style="color:#64748b;margin-top:.75rem;font-size:1rem;">Tudo que sua equipe precisa, do escritório ao campo.</p>
@@ -296,7 +281,7 @@
                 <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:auto;gap:1rem;">
 
                     <!-- Feature grande: Manutenções -->
-                    <div class="tech-card tech-card-featured reveal-up" style="grid-column:span 2;padding:2rem;">
+                    <div class="tech-card tech-card-featured" style="grid-column:span 2;padding:2rem;">
                         <div class="icon-box" style="margin-bottom:1.25rem;"><i class="fas fa-calendar-check"></i></div>
                         <h3 style="font-size:1.2rem;font-weight:700;color:#f1f5f9;margin-bottom:.5rem;">Controle de Manutenções</h3>
                         <p style="color:#64748b;font-size:.9rem;line-height:1.6;max-width:480px;margin-bottom:1.25rem;">
@@ -310,49 +295,49 @@
                     </div>
 
                     <!-- Estoque -->
-                    <div class="tech-card reveal-up" style="padding:1.75rem;">
+                    <div class="tech-card" style="padding:1.75rem;">
                         <div class="icon-box" style="margin-bottom:1rem;"><i class="fas fa-boxes-stacked"></i></div>
                         <h3 style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:.4rem;">Estoque Inteligente</h3>
                         <p style="color:#64748b;font-size:.85rem;line-height:1.6;">Baixa automática de peças em cada manutenção.</p>
                     </div>
 
                     <!-- Clientes -->
-                    <div class="tech-card reveal-up" style="padding:1.75rem;">
+                    <div class="tech-card" style="padding:1.75rem;">
                         <div class="icon-box" style="margin-bottom:1rem;"><i class="fas fa-users"></i></div>
                         <h3 style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:.4rem;">Clientes e Equipamentos</h3>
                         <p style="color:#64748b;font-size:.85rem;line-height:1.6;">Todos os dados com histórico completo e acesso rápido.</p>
                     </div>
 
                     <!-- WhatsApp -->
-                    <div class="tech-card reveal-up" style="padding:1.75rem;">
+                    <div class="tech-card" style="padding:1.75rem;">
                         <div class="icon-box" style="margin-bottom:1rem;"><i class="fab fa-whatsapp"></i></div>
                         <h3 style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:.4rem;">Lembretes por WhatsApp</h3>
                         <p style="color:#64748b;font-size:.85rem;line-height:1.6;">Lembretes de manutenção com um clique.</p>
                     </div>
 
                     <!-- Ponto -->
-                    <div class="tech-card reveal-up" style="padding:1.75rem;">
+                    <div class="tech-card" style="padding:1.75rem;">
                         <div class="icon-box" style="margin-bottom:1rem;"><i class="fas fa-clock"></i></div>
                         <h3 style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:.4rem;">Controle de Ponto</h3>
                         <p style="color:#64748b;font-size:.85rem;line-height:1.6;">Entradas, saídas e horas em relatórios detalhados.</p>
                     </div>
 
                     <!-- Relatórios -->
-                    <div class="tech-card reveal-up" style="padding:1.75rem;">
+                    <div class="tech-card" style="padding:1.75rem;">
                         <div class="icon-box" style="margin-bottom:1rem;"><i class="fas fa-chart-line"></i></div>
                         <h3 style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:.4rem;">Relatórios Gerenciais</h3>
                         <p style="color:#64748b;font-size:.85rem;line-height:1.6;">Financeiro e operacional por cliente e período.</p>
                     </div>
 
                     <!-- Gastos -->
-                    <div class="tech-card reveal-up" style="padding:1.75rem;">
+                    <div class="tech-card" style="padding:1.75rem;">
                         <div class="icon-box" style="margin-bottom:1rem;"><i class="fas fa-dollar-sign"></i></div>
                         <h3 style="font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:.4rem;">Gastos e Custos</h3>
                         <p style="color:#64748b;font-size:.85rem;line-height:1.6;">Técnicos registram despesas, admin acompanha tudo.</p>
                     </div>
 
                     <!-- Tarefas -->
-                    <div class="tech-card reveal-up" style="padding:1.75rem;grid-column:span 2;">
+                    <div class="tech-card" style="padding:1.75rem;grid-column:span 2;">
                         <div style="display:flex;align-items:flex-start;gap:1.25rem;">
                             <div class="icon-box"><i class="fas fa-clipboard-list"></i></div>
                             <div>
@@ -369,10 +354,10 @@
         <!-- ── PERFIS ── -->
         <section style="padding:5rem 0;background:var(--surface-2);">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" style="display:grid;align-items:center;gap:4rem;" class="lg:grid-cols-2">
-                <div class="reveal-up">
+                <div>
                     <img src="https://picsum.photos/seed/engrena-tech-team/720/800" alt="Equipe técnica em campo" style="width:100%;border-radius:16px;border:1px solid var(--border);object-fit:cover;aspect-ratio:4/5;">
                 </div>
-                <div class="reveal-up">
+                <div>
                     <span class="section-label">Dois perfis, uma solução</span>
                     <h2 style="font-size:clamp(1.75rem,3vw,2.5rem);font-weight:800;color:#f1f5f9;letter-spacing:-.02em;margin-bottom:1rem;">Visão do gestor,<br>ferramenta do técnico.</h2>
                     <p style="color:#64748b;font-size:1rem;line-height:1.7;margin-bottom:2rem;">Perfis e permissões que garantem que cada um foque no que realmente importa.</p>
@@ -404,7 +389,7 @@
         <!-- ── CTA FINAL ── -->
         <section style="padding:6rem 0;">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div class="tech-card reveal-up" style="text-align:center;padding:4rem 2rem;position:relative;overflow:hidden;">
+                <div class="tech-card" style="text-align:center;padding:4rem 2rem;position:relative;overflow:hidden;">
                     <div class="hero-glow" style="top:-200px;left:50%;transform:translateX(-50%);width:500px;height:500px;"></div>
                     <div style="position:relative;z-index:1;">
                         <span class="section-label">Comece agora</span>
